@@ -125,7 +125,7 @@ ol.steps b { color: var(--foam); font-weight: 500; }
       <div class="panel">
         <h2>Quick start</h2>
         <ol class="steps">
-          <li>Click the screen, press <b>S</b>.</li>
+          <li>Click the screen (on a phone, tap it to open the keyboard), press <b>S</b>.</li>
           <li>Type a speed in words per minute, such as <b>20</b>, then <b>Enter</b>.</li>
           <li>Press <b>Up arrow</b> for transmit mode. Type a message, then <b>Enter</b> to send it.</li>
           <li>Press <b>Down arrow</b> for receive mode, then use Station B or the key below.</li>
@@ -966,6 +966,11 @@ keyBtn.addEventListener('pointerdown', function (e) { e.preventDefault(); try { 
 ['pointerup', 'pointercancel', 'lostpointercapture'].forEach(function (n) { keyBtn.addEventListener(n, function () { btnHeld = false; applyKey(); }); });
 keyBtn.addEventListener('contextmenu', function (e) { e.preventDefault(); });
 screenCv.addEventListener('pointerdown', function () { screenCv.focus({preventScroll: true}); ensureAudio(); });
+/* On a touch screen, tapping the CRT opens the phone keyboard. A canvas cannot take text input, so the tap hands focus to the typing box.
+   This runs on click (not pointerdown) because Android only shows the keyboard for a focus() inside a completed tap. */
+screenCv.addEventListener('click', function () {
+  if (window.matchMedia && matchMedia('(pointer: coarse)').matches) kbd.focus({preventScroll: true});
+});
 
 /* ---------- audio: the sound card's clock drives the emulation ----------
    Each time the sound card needs samples, the next 1/60 s of the program runs and its sound is played: the DAC tone while you send, Station B's
