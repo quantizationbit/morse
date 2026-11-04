@@ -1,0 +1,456 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Morse Keyboard</title>
+<link rel="icon" href="/morse/favicon.svg" type="image/svg+xml">
+<link rel="icon" href="/morse/favicon.ico" sizes="48x48">
+<link rel="apple-touch-icon" href="/morse/apple-touch-icon.png">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=IBM+Plex+Mono:wght@400;500&family=IBM+Plex+Sans:wght@400;500;600&family=Silkscreen:wght@400;700&display=swap">
+<style>
+/* Layout: a framed CRT on the left, controls beside it; stacks on a phone. Same family look as the Diving Bell page. */
+:root {
+  --abyss: #0b1623;
+  --trench: #112638;
+  --silt: #1d3a52;
+  --foam: #e8f1f5;
+  --mist: #93aab8;
+  --ember: #ff8a1f;
+  --kelp: #2fd07a;
+  --alarm: #ff5a4d;
+  --display: 'Silkscreen', 'Courier New', monospace;
+  --body: 'IBM Plex Sans', system-ui, sans-serif;
+  --mono: 'IBM Plex Mono', ui-monospace, monospace;
+  color-scheme: dark;
+}
+* { box-sizing: border-box; }
+html, body { margin: 0; }
+body {
+  background: var(--abyss);
+  background-image: radial-gradient(120% 80% at 50% -10%, #17324a 0%, var(--abyss) 60%);
+  background-attachment: fixed;
+  color: var(--foam);
+  font: 15px/1.5 var(--body);
+  padding-block: 20px 40px;
+  padding-left: max(16px, env(safe-area-inset-left, 0px));
+  padding-right: max(16px, env(safe-area-inset-right, 0px));
+  -webkit-tap-highlight-color: transparent;
+}
+.wrap { max-width: 1040px; margin: 0 auto; }
+h1 { font: 700 clamp(26px, 5vw, 40px)/1 var(--display); letter-spacing: .04em; margin: 0; text-transform: uppercase; text-wrap: balance; }
+h1 span { color: var(--ember); }
+.lede { color: var(--mist); margin: 8px 0 0; max-width: 62ch; }
+.game { display: grid; grid-template-columns: minmax(0, 1fr) 320px; gap: 20px; margin-top: 18px; align-items: start; }
+@media (max-width: 860px) { .game { grid-template-columns: minmax(0, 1fr); } }
+.bezel { background: #05090f; border: 2px solid var(--silt); border-radius: 14px; padding: 12px; box-shadow: 0 0 0 1px #000, 0 18px 50px -18px #000; }
+.crt { position: relative; aspect-ratio: 4 / 3; background: #000; border-radius: 6px; overflow: hidden; }
+.crt canvas { display: block; width: 100%; height: 100%; image-rendering: pixelated; image-rendering: crisp-edges; }
+.crt::after { content: ""; position: absolute; inset: 0; pointer-events: none; background: repeating-linear-gradient(0deg, rgba(0,0,0,.14) 0 1px, transparent 1px 3px); mix-blend-mode: multiply; }
+.statusbar { display: flex; flex-wrap: wrap; gap: 6px 18px; align-items: center; margin-top: 10px; font: 500 13px var(--mono); color: var(--mist); }
+.statusbar b { color: var(--foam); font-weight: 500; }
+.lamp { display: inline-flex; align-items: center; gap: 6px; }
+.lamp i { width: 11px; height: 11px; border-radius: 50%; background: #2a3b4a; border: 1px solid #000; box-shadow: inset 0 0 0 1px #3d566b; }
+.lamp.on i { background: var(--ember); box-shadow: 0 0 9px 2px rgba(255,138,31,.65); border-color: #7a3b00; }
+.side { display: flex; flex-direction: column; gap: 14px; min-width: 0; }
+.panel { background: var(--trench); border: 1px solid var(--silt); border-radius: 10px; padding: 14px; }
+.panel h2 { font: 400 12px var(--display); letter-spacing: .12em; text-transform: uppercase; color: var(--ember); margin: 0 0 10px; }
+.keys { display: grid; grid-template-columns: auto 1fr; gap: 6px 12px; margin: 0; font-size: 14px; }
+.keys dt { font: 500 12px var(--mono); color: var(--foam); background: var(--abyss); border: 1px solid var(--silt); border-radius: 4px; padding: 1px 7px; white-space: nowrap; justify-self: start; }
+.keys dd { margin: 0; color: var(--mist); }
+.row { display: flex; flex-wrap: wrap; gap: 8px; }
+.keypad { display: grid; grid-template-columns: repeat(4, minmax(0, 1fr)); gap: 8px; margin-top: 12px; }
+button, select { font: 500 14px var(--body); color: var(--foam); background: var(--silt); border: 1px solid #2c5472; border-radius: 8px; padding: 9px 13px; min-height: 40px; cursor: pointer; }
+.keypad button { padding: 8px 4px; font-size: 13px; }
+button:hover, select:hover { background: #26496a; }
+button:focus-visible, select:focus-visible, canvas:focus-visible, textarea:focus-visible, input:focus-visible { outline: 2px solid var(--ember); outline-offset: 2px; }
+button.primary { background: var(--ember); color: #1b0e00; border-color: var(--ember); font-weight: 600; }
+button.primary:hover { background: #ffa04a; }
+button[aria-pressed="true"] { border-color: var(--ember); color: var(--ember); }
+button.on { background: var(--ember); color: #1b0e00; border-color: #ffc48a; }
+button:disabled { opacity: .5; cursor: default; }
+label.field { display: flex; flex-direction: column; gap: 4px; font: 500 12px var(--mono); color: var(--mist); flex: 1 1 100%; min-width: 0; }
+label.field select { width: 100%; }
+textarea, input[type=text] { width: 100%; background: var(--abyss); color: var(--foam); border: 1px solid var(--silt); border-radius: 6px; padding: 8px; font: 14px var(--mono); }
+textarea { min-height: 64px; resize: vertical; text-transform: uppercase; }
+.typebox { margin-top: 12px; }
+.check { display: flex; gap: 8px; align-items: flex-start; font-size: 13px; color: var(--mist); }
+.check input { margin-top: 4px; }
+.msg { font: 500 13px/1.45 var(--mono); padding: 8px 10px; border-radius: 6px; background: var(--abyss); border: 1px solid var(--silt); color: var(--mist); min-height: 2.6em; }
+.about p { margin: 0 0 8px; color: var(--mist); font-size: 14px; }
+.about p:last-child { margin: 0; }
+.about b { color: var(--foam); font-weight: 600; }
+.key { width: 100%; min-height: 56px; font: 700 15px var(--display); letter-spacing: .06em; touch-action: none; user-select: none; -webkit-user-select: none; }
+.small { font-size: 13px; color: var(--mist); margin: 8px 0 0; }
+ol.steps { margin: 0; padding-left: 20px; color: var(--mist); font-size: 14px; }
+ol.steps li { margin-bottom: 4px; }
+ol.steps b { color: var(--foam); font-weight: 500; }
+@media (prefers-reduced-motion: reduce) { * { transition: none !important; animation: none !important; } }
+</style>
+</head>
+<body>
+<div class="wrap">
+  <h1>Morse <span>Keyboard</span></h1>
+  <p class="lede">A Radio Shack Color Computer program by Bill Mandel, rebuilt from a fanfold printout. The original 6809 program runs here in an emulator: type text and it sends Morse, or let it listen and decode. Play it a recording of real on-air CW and watch it learn the timing.</p>
+
+  <div class="game">
+    <div>
+      <div class="bezel">
+        <div class="crt"><canvas id="screen" width="512" height="384" tabindex="0" aria-label="Color Computer screen. Click here, then type."></canvas></div>
+        <div class="statusbar" aria-live="off">
+          <span>Mode <b id="hudMode">Setup</b></span>
+          <span>Speed <b id="hudSpeed">-</b></span>
+          <span class="lamp" id="lampKey"><i></i>Key out</span>
+          <span class="lamp" id="lampIn"><i></i>Key in</span>
+          <span>Sound <b id="hudSound">click the screen</b></span>
+        </div>
+      </div>
+      <div class="keypad" id="keypad">
+        <button data-k="94" title="Up arrow">&#9650; Transmit</button>
+        <button data-k="10" title="Down arrow">&#9660; Receive</button>
+        <button data-k="8" title="Left arrow">&#9664; Back</button>
+        <button data-k="9" title="Right arrow">Restart &#9654;</button>
+        <button data-k="3" title="Break key">Break</button>
+        <button data-k="12" title="Clear key">Clear</button>
+        <button data-k="13" title="Enter key">Enter</button>
+        <button data-k="83" title="S key, starts from the instruction screen">S</button>
+      </div>
+      <div class="typebox">
+        <input type="text" id="kbd" placeholder="Tap here to type on a phone" autocomplete="off" autocapitalize="characters" autocorrect="off" spellcheck="false" aria-label="Type to the Color Computer">
+      </div>
+    </div>
+
+    <div class="side">
+      <div class="panel">
+        <h2>Quick start</h2>
+        <ol class="steps">
+          <li>Click the screen, press <b>S</b>.</li>
+          <li>Type a speed in words per minute, such as <b>20</b>, then <b>Enter</b>.</li>
+          <li>Press <b>Up arrow</b> for transmit mode. Type a message, then <b>Enter</b> to send it.</li>
+          <li>Press <b>Down arrow</b> for receive mode, then use Station B or the key below.</li>
+        </ol>
+      </div>
+
+      <div class="panel">
+        <h2>Program</h2>
+        <label class="field">Version
+          <select id="progVer"><option value="patched" selected>Patched receiver (decodes ordinary CW)</option><option value="original">As printed</option></select>
+        </label>
+        <p class="small">As printed only decodes this program's own sending rhythm. The patched version changes two receive-side calculations, the letter-gap threshold and the word-gap timeout, so ordinary Morse spacing works. Sending is identical. Changing version restarts the program.</p>
+        <p class="small"><a href="listing/morse_listing.html">Source listing</a> and <a href="listing/morse_listing_patched.html">patched source</a>, highlighted and commented.</p>
+      </div>
+
+      <div class="panel">
+        <h2>Station B</h2>
+        <p class="small" style="margin-top:0">A second Color Computer running the same program. Its key line is wired to your cassette input.</p>
+        <label class="field" style="margin-top:10px">Message to send you
+          <textarea id="bText" maxlength="160" aria-label="Message for Station B to send">CQ CQ DE W6XYZ</textarea>
+        </label>
+        <div class="row" style="margin-top:10px">
+          <label class="field" style="flex:1 1 120px">Speed
+            <select id="bWpm"><option>8</option><option>10</option><option>12</option><option selected>15</option><option>20</option><option>25</option><option>30</option></select>
+          </label>
+          <button class="primary" id="bSend" style="align-self:flex-end">Send to me</button>
+        </div>
+        <label class="check" style="margin-top:10px"><input type="checkbox" id="bPre" checked><span>Start with a V. The receiver learns dit and dah lengths from the first tones, so the first letter is used up.</span></label>
+        <div class="msg" id="bMsg" style="margin-top:10px">Put your station in receive mode first.</div>
+      </div>
+
+      <div class="panel">
+        <h2>Recording</h2>
+        <p class="small" style="margin-top:0">Play an mp3, aac, ogg or wav of Morse into your receiver. Put your station in receive mode and set a speed first. The patched receiver read a real on-air ragchew (Italian, 7036 kHz) at 16 to 36 WPM. As printed, the program only decodes its own sending rhythm, so the same recording comes out as E and T.</p>
+        <label class="field" style="margin-top:10px">Audio file
+          <input type="file" id="aFile" accept="audio/*,.mp3,.aac,.m4a,.ogg,.wav">
+        </label>
+        <label class="field" style="margin-top:10px">Or fetch a recording
+          <select id="aPreset"><option value="">Choose one...</option><option value="https://archive.org/download/U.S._Armed_Forces_Institute_Basic_Radio_Code_ca1942/20B_Sixteen_Words_Per_Minute_64kb.mp3">1942 U.S. War Department code course, 16 WPM (5 min, 2.4 MB)</option></select>
+        </label>
+        <div class="row" style="margin-top:8px"><input type="text" id="aUrl" placeholder="or paste an audio URL (needs CORS)" aria-label="Audio URL" style="flex:1 1 180px"><button id="aFetch">Fetch</button></div>
+        <p class="small">The 1942 course is five-character groups of letters and digits, sent by hand at about 20 WPM. It is from archive.org, a U.S. government work and likely public domain, though the item itself carries no rights mark. Your browser fetches it straight from archive.org when you click.</p>
+        <label class="field" style="margin-top:10px">Input
+          <select id="aMode"><option value="detector">Tone decoder (finds the pitch, ignores noise)</option><option value="raw">Raw polarity, as from a radio earphone jack (pitch sensitive)</option></select>
+        </label>
+        <div class="row" style="margin-top:10px"><button class="primary" id="aPlay" disabled>Play into receiver</button><button id="aStop" disabled>Stop</button></div>
+        <div class="msg" id="aMsg" style="margin-top:10px">No file loaded.</div>
+      </div>
+
+      <div class="panel">
+        <h2>Straight key</h2>
+        <button class="key" id="key" aria-label="Hold to key your receiver input">HOLD TO KEY</button>
+        <p class="small">Or hold Ctrl. This drives the same input as Station B. The patched receiver copes with ordinary spacing. As printed, the receiver expects the short gaps this program sends itself, so a hand key needs tight spacing inside each letter.</p>
+        <div class="row" style="margin-top:10px">
+          <label class="field" style="flex:1 1 100%">Transmit sound
+            <select id="txTone"><option value="sidetone" selected>Clean sidetone, keyed by the relay</option><option value="dac">The program's own tone (square wave)</option></select>
+          </label>
+          <label class="field" style="flex:1 1 100%">Sidetone pitch <input type="range" id="pitch" min="400" max="1000" step="10" value="700" aria-label="Sidetone pitch"> <span id="pitchHz">700 Hz</span></label>
+          <button id="btnSound" aria-pressed="false">Sound off</button>
+          <label class="field" style="flex:1 1 140px">Volume <input type="range" id="volume" min="0" max="100" value="80" aria-label="Volume"></label>
+          <button id="btnReset">Power cycle</button>
+        </div>
+      </div>
+
+      <div class="panel">
+        <h2>Keys</h2>
+        <dl class="keys">
+          <dt>Up</dt><dd>Transmit mode</dd>
+          <dt>Down</dt><dd>Receive mode</dd>
+          <dt>Left / Backspace</dt><dd>Backspace</dd>
+          <dt>Right</dt><dd>Restart program</dd>
+          <dt>Esc</dt><dd>Break: clear buffer and screen</dd>
+          <dt>Home / Del</dt><dd>Clear: clear buffer</dd>
+          <dt>@ + &lt; &gt;</dt><dd>BT, KN, SK, AR</dd>
+        </dl>
+      </div>
+
+      <div class="panel about">
+        <h2>About</h2>
+        <p>The 2,338 bytes at $3462 to $3D83 are assembled from the printed listing and checked against its object code, byte for byte. As printed, they run unmodified. The patched version changes two receive-side calculations (16 lines differ) and is the default here.</p>
+        <p>The program times everything by counting loop passes, and each pass includes Color BASIC's keyboard routine. That routine is replaced by a stand-in timed so a dit lasts 1.2 / WPM seconds. The real cost is inferred, not known.</p>
+        <p>The program's first received letter is used up learning dit and dah lengths, and it learns once per run. Station B sends a leading V for that reason. Sending a recording after a pause works the same way. Watch the top-left corner of the screen: it starts flashing yellow and blue once the dit and dah lengths are learned and tones are being timed.</p>
+        <p>Read the <a href="listing/morse_listing.html">annotated listing</a> or the <a href="listing/morse_listing_patched.html">patched one</a>, with the changed lines highlighted.</p>
+      </div>
+    </div>
+  </div>
+</div>
+
+<script>
+/*CPU*/
+</script>
+<script>
+/*MACHINE*/
+</script>
+<script>
+/*AUDIOIN*/
+</script>
+<script>
+(function () {
+'use strict';
+var CYC = /*CYC*/;
+var DATA = /*DATA*/;
+var $ = function (id) { return document.getElementById(id); };
+
+function makeStation(which) {
+  var st = new MorseCoCo(CPU6809, CYC, DATA.games[which], {pollDelay: DATA.pollDelay}); st.boot();
+  st.txTone = ($('txTone') || {}).value || 'sidetone'; st.tonePitch = +(($('pitch') || {}).value || 700);
+  return st;
+}
+var A = makeStation('patched');   // your station
+var B = null, wire = null, bBusy = false;
+
+/* ---------- display: 32x16 text screen, drawn 16x24 pixels per cell ---------- */
+// 5x7 dot glyphs for screen codes 0x20..0x5F (ASCII order), five hex bytes each, one byte per column, bit 0 = top row.
+var FONT = /*FONT*/;
+var GLYPH = FONT.map(function (h) { var c = []; for (var i = 0; i < 5; i++) c.push(parseInt(h.substr(i * 2, 2), 16)); return c; });
+var screenCv = $('screen'), sctx = screenCv.getContext('2d');
+var img = sctx.createImageData(512, 384), px = new Uint32Array(img.data.buffer);
+function rgba(c) { return ((255 << 24) | (c[2] << 16) | (c[1] << 8) | c[0]) >>> 0; }
+var prev = new Uint8Array(512), prevVdg = -1, BLACK = 0xFF000000;
+function fillCell(x0, y0, col) { for (var y = 0; y < 24; y++) { var o = (y0 + y) * 512 + x0; for (var x = 0; x < 16; x++) px[o + x] = col; } }
+function drawCell(idx, bright, dim) {
+  var b = A.ram[0x400 + idx], x0 = (idx & 31) * 16, y0 = (idx >> 5) * 24;
+  if (b & 0x80) {                                  // semigraphics 4: four colored quadrants
+    var on = rgba(A.PALETTE[(b >> 4) & 7]);
+    for (var y = 0; y < 24; y++) for (var x = 0; x < 16; x++) {
+      var bit = y < 12 ? (x < 8 ? 8 : 4) : (x < 8 ? 2 : 1);
+      px[(y0 + y) * 512 + x0 + x] = (b & bit) ? on : BLACK;
+    }
+    return;
+  }
+  var normal = (b & 0x40) !== 0, g = b & 0x3F, gi = g < 32 ? g + 32 : g - 32, glyph = GLYPH[gi];
+  var bg = normal ? bright : dim, fg = normal ? 0xFF101010 : bright;
+  fillCell(x0, y0, bg);
+  for (var c = 0; c < 5; c++) for (var r = 0; r < 7; r++) if ((glyph[c] >> r) & 1) {
+    var ox = x0 + 3 + c * 2, oy = y0 + 5 + r * 2, o = oy * 512 + ox;
+    px[o] = px[o + 1] = px[o + 512] = px[o + 513] = fg;
+  }
+}
+function draw() {
+  var vdgNow = A.vdg & 0x08, all = vdgNow !== prevVdg, any = all;
+  var c = A.cssColor(), bright = rgba(c), dim = rgba([c[0] * 0.13 | 0, c[1] * 0.13 | 0, c[2] * 0.13 | 0]);
+  for (var i = 0; i < 512; i++) {
+    var b = A.ram[0x400 + i];
+    if (all || b !== prev[i]) { prev[i] = b; drawCell(i, bright, dim); any = true; }
+  }
+  prevVdg = vdgNow;
+  if (any) sctx.putImageData(img, 0, 0);
+}
+
+/* ---------- keyboard ---------- */
+var SPECIAL = {Enter: 13, Backspace: 8, ArrowLeft: 8, ArrowRight: 9, ArrowUp: 94, ArrowDown: 10, Escape: 3, Home: 12, Delete: 12};
+function keyCode(key) {
+  if (SPECIAL[key]) return SPECIAL[key];
+  if (key.length === 1) { var c = key.toUpperCase().charCodeAt(0); if (c >= 0x20 && c <= 0x5F) return c; }   // the Color Computer keys: upper case only
+  return 0;
+}
+var ctrlHeld = false, btnHeld = false;
+function applyKey() { A.manualKey = ctrlHeld || btnHeld; $('key').classList.toggle('on', btnHeld); }
+var kbd = $('kbd');
+addEventListener('keydown', function (e) {
+  var t = e.target, tag = t && t.tagName;
+  if (tag === 'TEXTAREA' || tag === 'SELECT' || (tag === 'INPUT' && t !== kbd)) return;
+  if (e.key === 'Control') { ctrlHeld = true; applyKey(); ensureAudio(); return; }
+  if (e.ctrlKey || e.metaKey || e.altKey) return;
+  if (tag === 'BUTTON' && (e.key === 'Enter' || e.key === ' ')) return;
+  var code = keyCode(e.key);
+  if (!code) return;
+  if (t === kbd && e.key.length === 1) return;              // printable keys in the phone box arrive through the input event
+  e.preventDefault();
+  if (e.repeat) return;                                     // the Color Computer keyboard does not auto-repeat
+  ensureAudio(); A.pressKey(code);
+});
+addEventListener('keyup', function (e) { if (e.key === 'Control') { ctrlHeld = false; applyKey(); } });
+addEventListener('blur', function () { ctrlHeld = btnHeld = false; applyKey(); });
+kbd.addEventListener('input', function () {
+  var v = kbd.value; kbd.value = ''; ensureAudio();
+  for (var i = 0; i < v.length; i++) { var c = v[i].toUpperCase().charCodeAt(0); if (c >= 0x20 && c <= 0x5F) A.pressKey(c); }
+});
+document.querySelectorAll('#keypad button').forEach(function (b) {
+  b.addEventListener('click', function () { ensureAudio(); A.pressKey(+b.dataset.k); b.blur(); });
+});
+var keyBtn = $('key');
+keyBtn.addEventListener('pointerdown', function (e) { e.preventDefault(); try { keyBtn.setPointerCapture(e.pointerId); } catch (x) {} btnHeld = true; applyKey(); ensureAudio(); });
+['pointerup', 'pointercancel', 'lostpointercapture'].forEach(function (n) { keyBtn.addEventListener(n, function () { btnHeld = false; applyKey(); }); });
+keyBtn.addEventListener('contextmenu', function (e) { e.preventDefault(); });
+screenCv.addEventListener('pointerdown', function () { screenCv.focus({preventScroll: true}); ensureAudio(); });
+
+/* ---------- audio: the sound card's clock drives the emulation ----------
+   Each time the sound card needs samples, the next 1/60 s of the program runs and its sound is played: the DAC tone while you send, Station B's
+   sidetone, or the recording itself. Sound, key lamps and the program therefore share one clock and cannot drift apart. Without audio (no click yet,
+   or sound off before the first click) the page runs on the screen's timer instead. */
+var actx = null, soundOn = true, volume = 0.8, audioDriven = false, cur = null, pos = 0, fieldsRun = 0;
+function stepField() { if (wire) wire.runFrame(); else A.runFrame(); fieldsRun++; }
+function ensureAudio() {
+  if (actx) { if (actx.state === 'suspended') actx.resume(); return; }
+  if (!soundOn) return;
+  try {
+    var AC = window.AudioContext || window.webkitAudioContext; if (!AC) return;
+    actx = new AC();
+    var proc = actx.createScriptProcessor(2048, 0, 1);
+    proc.onaudioprocess = function (ev) {
+      var out = ev.outputBuffer.getChannelData(0);
+      for (var i = 0; i < out.length; i++) {
+        if (!cur || pos >= cur.length) {
+          if (document.hidden) { out[i] = 0; continue; }
+          stepField(); cur = A.audioFrame(actx.sampleRate); pos = 0;
+        }
+        out[i] = soundOn ? cur[pos++] * volume : (pos++, 0);
+      }
+    };
+    proc.connect(actx.destination);
+    actx.onstatechange = function () { audioDriven = actx.state === 'running'; last = performance.now(); acc = 0; };
+    audioDriven = actx.state === 'running';
+  } catch (e) { actx = null; }
+}
+$('btnSound').addEventListener('click', function () {
+  soundOn = !soundOn; this.setAttribute('aria-pressed', String(!soundOn)); this.textContent = soundOn ? 'Sound off' : 'Sound on';
+  if (soundOn) ensureAudio();
+});
+$('volume').addEventListener('input', function () { volume = +this.value / 100; });
+$('txTone').addEventListener('change', function () { A.txTone = this.value; });
+$('pitch').addEventListener('input', function () { A.tonePitch = +this.value; $('pitchHz').textContent = this.value + ' Hz'; });
+
+/* ---------- Station B: a second copy of the program sending to your cassette input ---------- */
+var bLast = 0;
+function sendB() {
+  var txt = $('bText').value.toUpperCase().replace(/[^\x20-\x5F]/g, '').replace(/\s+/g, ' ').trim();
+  if (!txt) { $('bMsg').textContent = 'Type a message first.'; return; }
+  ensureAudio();
+  var wpm = +$('bWpm').value, msg = ($('bPre').checked ? 'V' : '') + txt;
+  B = makeStation('original');          // the other station always runs the program as printed
+  B.runSeconds(0.3); B.typeText('S'); B.runSeconds(0.3);                          // set B up the way a user would
+  B.typeText(String(wpm)); B.pressKey(13); B.runSeconds(0.5); B.pressKey(94); B.runSeconds(0.3);
+  B.typeText(msg); B.runSeconds(0.2); B.pressKey(13);
+  wire = MorseCoCo.link(A, B); bLast = performance.now();
+  var inMain = A.ram[0x407] === 0x52 && A.ram[0x408] === 0x45;
+  $('bMsg').textContent = 'Station B is sending ' + msg.length + ' characters at ' + wpm + ' WPM.' + (inMain && A.ram[0x41F] !== 0x12 ? ' Your station is not in receive mode (press Down arrow).' : '');
+  $('bSend').disabled = true;
+}
+function checkB() {
+  if (!B) return;
+  if (B.relay || B.keyQueue.length) bLast = performance.now();
+  if (B.ram[B.syms.XFLG] === 0 && !B.relay && performance.now() - bLast > 1500) {
+    B = null; wire = null; $('bSend').disabled = false; $('bMsg').textContent = 'Station B finished.';
+  }
+}
+$('bSend').addEventListener('click', sendB);
+
+/* ---------- Recording: decoded audio drives the cassette input ---------- */
+var rec = null;
+function mixDown(buf) {
+  var n = buf.length, out = new Float32Array(n);
+  for (var c = 0; c < buf.numberOfChannels; c++) { var d = buf.getChannelData(c); for (var i = 0; i < n; i++) out[i] += d[i] / buf.numberOfChannels; }
+  return out;
+}
+function loadBuffer(ab, name) {
+  $('aMsg').textContent = 'Decoding ' + name + '...'; $('aPlay').disabled = true;
+  var AC = window.AudioContext || window.webkitAudioContext, ctx = new AC();
+  ctx.decodeAudioData(ab).then(function (buf) {
+    ctx.close();
+    var pcm = mixDown(buf);
+    rec = {name: name, pcm: pcm, rate: buf.sampleRate, det: null};
+    $('aMsg').textContent = name + ': ' + (pcm.length / buf.sampleRate).toFixed(1) + ' s. Ready.'; $('aPlay').disabled = false;
+  }).catch(function () { rec = null; $('aMsg').textContent = 'This browser could not decode that file.'; });
+}
+$('aFile').addEventListener('change', function () {
+  var f = this.files && this.files[0]; if (!f) return;
+  f.arrayBuffer().then(function (ab) { loadBuffer(ab, f.name); });
+});
+function fetchRecording(url) {
+  if (!/^https?:\/\//i.test(url)) { $('aMsg').textContent = 'Enter an http or https address.'; return; }
+  $('aMsg').textContent = 'Fetching ' + url.split('/').pop() + '...'; $('aPlay').disabled = true;
+  fetch(url).then(function (r) { if (!r.ok) throw new Error(r.status); return r.arrayBuffer(); })
+    .then(function (ab) { loadBuffer(ab, decodeURIComponent(url.split('/').pop())); })
+    .catch(function () { rec = null; $('aMsg').textContent = 'Could not fetch that address. The server must allow cross-origin requests, and you must be online.'; });
+}
+$('aFetch').addEventListener('click', function () { fetchRecording($('aUrl').value.trim()); });
+$('aPreset').addEventListener('change', function () { if (this.value) { $('aUrl').value = this.value; fetchRecording(this.value); } });
+$('aPlay').addEventListener('click', function () {
+  if (!rec) return;
+  ensureAudio();
+  var raw = $('aMode').value === 'raw', key = null, note = '';
+  if (!raw) { if (!rec.det) rec.det = MorseAudioIn.detect(rec.pcm, rec.rate); key = rec.det.key; note = ' Tone found at ' + rec.det.freq + ' Hz.'; }
+  else note = ' Raw mode: the program sees the audio\'s polarity, as it did from a radio earphone jack. It depends on the pitch lining up with its timing loops; around 1200 to 1500 Hz is where it worked best.';
+  A.setAudioInput(rec.pcm, rec.rate, A.cpu.cycles, key);
+  $('aStop').disabled = false; $('aMsg').textContent = 'Playing ' + rec.name + '.' + note;
+});
+$('aStop').addEventListener('click', function () { A.setAudioInput(null); $('aStop').disabled = true; $('aMsg').textContent = 'Stopped.'; });
+function checkRec() { if (!$('aStop').disabled && !A.audioInputActive()) { A.setAudioInput(null); $('aStop').disabled = true; $('aMsg').textContent = 'Finished.'; } }
+
+
+/* ---------- main loop ---------- */
+var acc = 0, last = performance.now();
+function hud() {
+  var inMain = A.ram[0x407] === 0x52 && A.ram[0x408] === 0x45, mode = A.ram[0x41F];
+  $('hudMode').textContent = !inMain ? 'Setup' : mode === 0x14 ? 'Transmit' : 'Receive';
+  var sp = parseInt(String.fromCharCode(A.ram[0x41B] & 0x3F, A.ram[0x41C] & 0x3F), 10);
+  $('hudSpeed').textContent = inMain && sp ? sp + ' WPM' : '-';
+  $('lampKey').classList.toggle('on', A.relay);
+  $('lampIn').classList.toggle('on', !!A.sigAt(A.cpu.cycles));
+  $('hudSound').textContent = audioDriven ? (soundOn ? 'on' : 'muted') : 'click the screen';
+}
+function tick(now) {
+  var dt = Math.min(now - last, 1000); last = now;   // emulation is cheap, so a throttled tab catches up instead of slowing the Morse timing
+  if (!document.hidden) {
+    if (!audioDriven) {
+      acc += dt;
+      var n = 0;
+      while (acc >= 1000 / 60 && n < 60) { stepField(); acc -= 1000 / 60; n++; }
+      if (acc > 1000) acc = 0;
+    }
+    checkB(); checkRec(); draw(); hud();
+  }
+  requestAnimationFrame(tick);
+}
+$('btnReset').addEventListener('click', function () {
+  A = makeStation($('progVer').value); B = null; wire = null; $('aStop').disabled = true; $('bSend').disabled = false; prevVdg = -1; $('bMsg').textContent = 'Put your station in receive mode first.'; screenCv.focus({preventScroll: true});
+});
+$('progVer').addEventListener('change', function () {
+  A = makeStation(this.value); B = null; wire = null; $('bSend').disabled = false; $('aStop').disabled = true; prevVdg = -1;
+  $('bMsg').textContent = 'Put your station in receive mode first.'; applyKey(); screenCv.focus({preventScroll: true});
+});
+requestAnimationFrame(function (t) { last = t; tick(t); });
+})();
+</script>
+</body>
+</html>

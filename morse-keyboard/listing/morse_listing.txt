@@ -1,0 +1,828 @@
+00100 *MORSE CODE PROGRAM
+00110 * BY BILL MANDEL
+00120 *
+00130 BEGIN   LBRA START
+00140 POLCAT  EQU $A000
+00150 ISPD    FDB 0
+00160 NSS     FDB 0
+00170 NFLAG   FCB 0
+00180 TVAL    FDB 0
+00190 BSTK    FDB 0
+00200 ESTK    FDB 0
+00210 SFL     FCB 0
+00220 CTR     FCB 0
+00230 SLOC    FCB 0
+00240 SBLOC   FCB 0
+00250 XFLG    FCB 0
+00260 RFLG    FCB 0
+00270 RSTR    FCB 0
+00280 JXMT    FCB 0
+00290 FLAG    FCB 0
+00300 TEMP    FDB 0
+00310 T1      FDB 0
+00320 T2      FDB 0
+00330 TMID    FDB 0
+00340 RC      FCB 0
+00350 TIME    FDB 0
+00360 TF      FDB 0
+00370 MCT     FCB 0
+00380 IR      FCB 255
+00390 T3      FDB 0
+00400 BCOL    FCB 0
+00410 TSP     FDB 0
+00420 START   LDA #$EF
+00430         STA BCOL
+00440         LDS #$03E3
+00450         LBSR CLS1
+00460         CLR XFLG
+00470         CLR RSTR
+00480         CLR RFLG
+00490         INC RFLG
+00500         LDX #25
+00510         STX TIME
+00520         LBSR CPIA
+00530         LBSR INST
+00540         LBSR CLS1
+00550         LDY #0
+00560 L1      LDB DATA,Y
+00570         ORB #$40
+00580         STB $0400,Y
+00590         LEAY 1,Y
+00600         CMPB #$6E
+00610         BNE L1
+00620         JMP CONT
+00630 DATA    FCC /SPEED (WPM)?                    /
+00640         FCC /PLEASE ENTER THE TRANSMITTING   SPEED ABOVE./
+00650 CONT    LBSR RDSP
+00660         LBSR LDTMR
+00670         LDA #$DF
+00680         STA BCOL
+00690         LBSR CLS1
+00700         LBSR CLS
+00710         LDX #HT
+00720         LDY #$05E0
+00730 H1      LDA ,X+
+00740         ORA #$40
+00750         CMPA #$6E
+00760         BNE H2
+00770         LDY #$0407
+00780 H3      LDA ,X+
+00790         ORA #$40
+00800         CMPA #$6E
+00810         BNE H4
+00820         LDX ISPD
+00830         STX $041B
+00840         LBRA XMIT
+00850 H4      STA ,Y+
+00860         BRA H3
+00870 H2      STA ,Y+
+00880         BRA H1
+00890 INST    LDX #$0460
+00900         LDY #ITEXT
+00910 IN1     LDA ,Y+
+00920         ANDA #63
+00930         CMPA #$2A
+00940         BNE IN2
+00950 IN3     JSR [POLCAT]
+00960         BEQ IN3
+00970         CMPA #$53
+00980         BNE IN3
+00990         RTS
+01000 IN2     STA ,X+
+01010         BRA IN1
+01020 ITEXT   FCC / MORSE KEYBOARD BY BILL MANDEL. /
+01030         FCC /INSTRUCTIONS:                   /
+01040         FCC /BREAK KEY- CLEARS BUFFER&SCREEN /
+01050         FCC /CLEAR KEY- CLEARS BUFFER        /
+01060         FCC /UP ARROW- TRANSMIT MODE         /
+01070         FCC /DOWN ARROW- RECIEVE MODE        /
+01080         FCC /LEFT ARROW- BACKSPACE           /
+01090         FCC /RIGHT ARROW- RESTART PROGRAM    /
+01100         FCC /@ = BT  + = KN  < = SK  > = AR  /
+01110         FCC /--------PRESS S TO START--------*/
+01120 HT      FCC /@=BT +=KN <=SK >=AR  CLS = BREAK./
+01130         FCC /RESTART=RIGHT ARROW./
+01140 CPIA    ORCC #$50
+01150         LDA $FF23
+01160         ORA #8
+01170         STA $FF23
+01180         LDA #8
+01190         STA $FF22
+01200         LDA $FF01
+01210         ORA #8
+01220         STA $FF01
+01230         RTS
+01240 RDSP    LDX #$040D
+01250         STX NSS
+01260         CLR NFLAG
+01270         LDD #$3030
+01280         STD ISPD
+01290         LDB #$20
+01300         STB ,X
+01310 L4      JSR [POLCAT]
+01320         BEQ L4
+01330         ANDA #$BF
+01340         CMPA #8
+01350         BNE L5
+01360         LDB #$60
+01370         LDX NSS
+01380         STB ,X
+01390         LEAX -1,X
+01400         STX NSS
+01410         CMPX #$040C
+01420         BNE L5
+01430         LEAX 1,X
+01440         STX NSS
+01450 L5      CMPA #$0D
+01460         BNE L6
+01470         LDB NFLAG
+01480         BEQ L6
+01490         LDX NSS
+01500         CMPX #$040E
+01510         BNE L7
+01520         LDB $040D
+01530         STB ISPD+1
+01540         RTS
+01550 L7      LDX $040D
+01560         STX ISPD
+01570         RTS
+01580 L6      CMPA #$30
+01590         BLO L8
+01600         CMPA #$39
+01610         BHI L8
+01620         LDX NSS
+01630         CMPX #$040F
+01640         BEQ L9
+01650         LEAX 1,X
+01660         STX NSS
+01670 L9      ORA #$40
+01680         STA -1,X
+01690         INC NFLAG
+01700 L8      LDX NSS
+01710         CMPX #$040D
+01720         BNE L10
+01730         CLR NFLAG
+01740 L10     LDB #$20
+01750         STB ,X
+01760         BRA L4
+01770 LDTMR   LDD ISPD
+01780         ANDA #63
+01790         ANDB #63
+01800         SUBD #$3030
+01810         BNE L12
+01820         LDX #$6060
+01830         STX $040E
+01840         LBSR RDSP
+01850         BRA LDTMR
+01860 L12     STD TVAL
+01870         LDB #10
+01880         MUL
+01890         CLR TVAL
+01900         ADDD TVAL
+01910         STB CTR
+01920         LDX #1
+01930 LT1     STX TEMP
+01940         LDA CTR
+01950         LDB TEMP+1
+01960         MUL
+01970         STD TVAL
+01980         LDA CTR
+01990         LDB TEMP
+02000         MUL
+02010         EXG A,B
+02020         ADDD TVAL
+02030         LEAX 1,X
+02040         CMPD #1410
+02050         BLT LT1
+02060         LEAX -2,X
+02070         STX TVAL
+02080         RTS
+02090 CLS     LDX #$20
+02100         LDA #$60
+02110 L14     STA $0400,X
+02120         LEAX 1,X
+02130         CMPX #$100
+02140         BNE L14
+02150         LDA #$20
+02160 LP3     STA $0400,X
+02170         LEAX 1,X
+02180         CMPX #$01E0
+02190         BNE LP3
+02200         LDA #32
+02210         STA SLOC
+02220         CLR SBLOC
+02230         LDX #STACK
+02240         STX BSTK
+02250         STX ESTK
+02260         LDA #32
+02270         STA $0420
+02280         RTS
+02290 UPSTK   LDX ESTK
+02300         CMPX #$3FFE
+02310         BGT U1
+02320         LDA #$DF
+02330         STA $041D
+02340 U1      JSR [POLCAT]
+02350         BNE L15
+02360         RTS
+02370 L15     LDY ESTK
+02380         CMPY BSTK
+02390         BGT L16
+02400         LDY #STACK
+02410         STY BSTK
+02420         STY ESTK
+02430 L16     CMPY #$3FFF
+02440         BLT UPS1
+02450         LDY #$3FFE
+02460         STY ESTK
+02470         LDB #13
+02480         STB $041D
+02490 UPS1    CMPA #$0D
+02500         BNE US1
+02510         INC XFLG
+02520         INC JXMT
+02530         RTS
+02540 US1     CMPA #12
+02550         BNE US2
+02560         LDX #STACK
+02570         STX BSTK
+02580         STX ESTK
+02590         RTS
+02600 US2     CMPA #10
+02610         BNE US3
+02620         INC RFLG
+02630         RTS
+02640 US3     CMPA #8
+02650         BNE US4
+02660         LBSR BKSP
+02670         RTS
+02680 US4     CMPA #$5E
+02690         BNE US5
+02700         INC JXMT
+02710         RTS
+02720 US5     CMPA #3
+02730         BNE US6
+02740         CLR XFLG
+02750         LBSR CLS
+02760         LDA #$60
+02770         STA $0500
+02780         RTS
+02790 US6     CMPA #9
+02800         BNE USC
+02810         INC RSTR
+02820         RTS
+02830 USC     ANDA #63
+02840         STA [ESTK]
+02850         LDY ESTK
+02860         LEAY 1,Y
+02870         STY ESTK
+02880         LBSR CHROUT
+02890         RTS
+02900 LBWC    LDX BSTK
+02910         CMPX ESTK
+02920         BNE L17
+02930         CLR XFLG
+02940         PULS X
+02950         LBRA RCVR
+02960 L17     LDA [BSTK]
+02970         LDY #TABLE
+02980         LDB A,Y
+02990 L19     LEAX 1,X
+03000         STX BSTK
+03010         RTS
+03020 GMC     LDA #8
+03030         STA CTR
+03040         CLR SFL
+03050         CMPB #0
+03060         BNE L20
+03070         LBSR CDLY
+03080         LBSR CDLY
+03090         RTS
+03100 L20     DEC CTR
+03110         ASLB
+03120         BCC L20
+03130 L21     LDY #1
+03140         LDA #$AF
+03150         STA $0400
+03160         LDA #$9F
+03170         STA $0401
+03180         ASLB
+03190         BCC L22
+03200         LDY #3
+03210 L22     BSR SOUND
+03220         DEC CTR
+03230         BNE L21
+03240         LBSR CDLY
+03250         RTS
+03260 SOUND   LDA $FF21
+03270         ORA #8
+03280         STA $FF21
+03290         LDA $FF01
+03300         ANDA #$F7
+03310         STA $FF01
+03320 L23     LDX TVAL
+03330 L24     LDA #$FC
+03340         STA $FF20
+03350         LDA #10
+03360 L25     DECA
+03370         BNE L25
+03380         LDA #4
+03390         STA $FF20
+03400         LDA #8
+03410 L26     DECA
+03420         BNE L26
+03430         PSHS Y,X,B,A
+03440         LBSR UPSTK
+03450         PULS A,B,X,Y
+03460         LEAX -1,X
+03470         BNE L24
+03480         LEAY -1,Y
+03490         BNE L23
+03500         LDA $FF21
+03510         ANDA #$F7
+03520         STA $FF21
+03530         LDA $FF01
+03540         ORA #8
+03550         STA $FF01
+03560         LDA #$9F
+03570         STA $0400
+03580         LDA #$AF
+03590         STA $0401
+03600         LDX TVAL
+03610 L27     PSHS Y,X,B,A
+03620         LBSR UPSTK
+03630         PULS A,B,X,Y
+03640         LEAX -2,X
+03650         CMPX #0
+03660         BGT L27
+03670         RTS
+03680 CHRCV   LDX #$0400
+03690         ORA #$40
+03700         LDB SLOC
+03710         ABX
+03720         STA ,X+
+03730         CMPX #$0500
+03740         BEQ CH1
+03750         LDA #32
+03760         STA ,X
+03770 CH1     INC SLOC
+03780         BEQ L29
+03790         RTS
+03800 L29     LDY #$0440
+03810         LDX #$0420
+03820 LL29    LDB ,Y
+03830         STB ,X
+03840         LEAX 1,X
+03850         LEAY 1,Y
+03860         CMPY #$0500
+03870         BLT LL29
+03880         LDA #$E0
+03890         STA SLOC
+03900         LDX #$04E0
+03910         LDB #$60
+03920 LP2     STB ,X+
+03930         CMPX #$0500
+03940         BLT LP2
+03950         LDA #32
+03960         STA $04E0
+03970         RTS
+03980 CHROUT  ANDA #$BF
+03990         LDX #$0500
+04000         LDB SBLOC
+04010         ABX
+04020         STA ,X+
+04030         INC SBLOC
+04040         CMPB #$DF
+04050         BEQ L31
+04060         LDA #$60
+04070         STA ,X
+04080         RTS
+04090 L31     LDY #$0520
+04100         LDX #$0500
+04110 LL31    LDB ,Y
+04120         STB ,X
+04130         LEAX 1,X
+04140         LEAY 1,Y
+04150         CMPY #$05E0
+04160         BLT LL31
+04170         LDA #$C0
+04180         STA SBLOC
+04190         LDX #$05C0
+04200         LDB #$20
+04210 LP1     STB ,X+
+04220         CMPX #$05E0
+04230         BLT LP1
+04240         LDX #$05C0
+04250         LDA #$60
+04260         STA ,X
+04270         RTS
+04280 CDLY    LDX TVAL
+04290 CD1     LDA #2
+04300 CD2     PSHS Y,X,B,A
+04310         LBSR UPSTK
+04320         PULS A,B,X,Y
+04330         DECA
+04340         BNE CD2
+04350         LEAX -1,X
+04360         BNE CD1
+04370         RTS
+04380 BKSP    LDX ESTK
+04390         LEAX -1,X
+04400         CMPX BSTK
+04410         BGE BK2
+04420         LDX #STACK
+04430         STX BSTK
+04440         STX ESTK
+04450         RTS
+04460 BK2     STX ESTK
+04470         LDX #$0500
+04480         LDB SBLOC
+04490         ABX
+04500         LDA #$20
+04510         STA ,X
+04520         LEAX -1,X
+04530         DECB
+04540         CMPX #$0500
+04550         BGE BK1
+04560         LEAX 1,X
+04570         INCB
+04580 BK1     LDA #$60
+04590         STA ,X
+04600         STB SBLOC
+04610         RTS
+04620 CLS1    LDX #$0400
+04630         LDA BCOL
+04640 CLP1    STA ,X+
+04650         CMPX #$0600
+04660         BNE CLP1
+04670         RTS
+04680 XMIT    NOP
+04690         LDA #$C6
+04700         STA $0405
+04710         LDA #$EC
+04720         STA $0403
+04730         CLR JXMT
+04740         LDA #$14
+04750         STA $041F
+04760         LDB SBLOC
+04770         LDX #$0500
+04780         ABX
+04790         LDA #$60
+04800         STA ,X
+04810 X2      LBSR UPSTK
+04820         LDA RSTR
+04830         BEQ X3
+04840         LBRA START
+04850 X3      LDA RFLG
+04860         BNE RCVR
+04870         LDA XFLG
+04880         BEQ X2
+04890         LBSR LBWC
+04900         LBSR GMC
+04910         LDX BSTK
+04920         CMPX ESTK
+04930         BNE XM1
+04940         LDX #STACK
+04950         STX BSTK
+04960         STX ESTK
+04970         CLR XFLG
+04980         BRA RCVR
+04990 XM1     NOP
+05000         BRA X2
+05010 RCVR    NOP
+05020         CLR RFLG
+05030         LDA #$12
+05040         STA $041F
+05050         LDA $0403
+05060         EORA #15
+05070         STA $0403
+05080         CLR FLAG
+05090         LDX #0
+05100 R87     LDA $FF20
+05110         ORA #$FE
+05120         LEAX 15,X
+05130         CMPX #0
+05140         LBMI RCVR
+05150         PSHS X,A
+05160         LBSR UPSTK
+05170         LDA RFLG
+05180         BEQ R88
+05190         LBRA RCVR
+05200 R88     LDA JXMT
+05210         BEQ R89
+05220         LBRA XMIT
+05230 R89     LDA RSTR
+05240         BEQ R90
+05250         LBRA START
+05260 R90     PULS A,X
+05270         CMPA IR
+05280         BNE R87
+05290         LDX #0
+05300 R1      LDA $FF20
+05310         LEAX 1,X
+05320         PSHS X,A
+05330         LBSR UPSTK
+05340         LDA RFLG
+05350         BEQ R80
+05360         LBRA RCVR
+05370 R80     LDA JXMT
+05380         BEQ R81
+05390         LBRA XMIT
+05400 R81     LDA RSTR
+05410         BEQ R83
+05420         LBRA START
+05430 R83     PULS A,X
+05440         ORA #$FE
+05450         CMPA IR
+05460         BEQ R1
+05470         STX TSP
+05480         LDX #0
+05490 R2      LEAX 1,X
+05500         PSHS X
+05510         LBSR UPSTK
+05520         LDA RFLG
+05530         BEQ R34
+05540         LBRA RCVR
+05550 R34     LDA JXMT
+05560         BEQ R35
+05570         LBRA XMIT
+05580 R35     LDA RSTR
+05590         BEQ R82
+05600         LBRA START
+05610 R82     PULS X
+05620 R28     LDA $FF20
+05630         ORA #$FE
+05640         CMPX TMID
+05650         BRN R2
+05660         CMPA IR
+05670         BNE R2
+05680         LDB TIME+1
+05690 R50     LDA $FF20
+05700         ORA #$FE
+05710         LEAX 1,X
+05720         CMPA IR
+05730         BEQ R51
+05740         BRA R2
+05750 R51     DECB
+05760         BNE R50
+05770         LEAX -25,X
+05780         LDA FLAG
+05790         BNE R3
+05800         STX T1
+05810         INC FLAG
+05820         LDX #0
+05830         LBRA R1
+05840 R3      STX T2
+05850         CMPX T1
+05860         BNE R4
+05870         LDX #0
+05880         LBRA R1
+05890 R4      BLT R5
+05900         TFR X,D
+05910         SUBD T1
+05920         TFR D,X
+05930         LDD T1
+05940         LSRA
+05950         RORB
+05960         STD TEMP
+05970         CMPX TEMP
+05980         BGE R7
+05990         LDX #0
+06000         LBRA R1
+06010 R5      LDX T1
+06020         TFR X,D
+06030         SUBD T2
+06040         TFR D,X
+06050         LDD T2
+06060         LSRA
+06070         RORB
+06080         STD TEMP
+06090         CMPX TEMP
+06100         BGE R9
+06110         LDX #0
+06120         LBRA R1
+06130 R9      LDX T1
+06140         LDY T2
+06150         STX T2
+06160         STY T1
+06170 R7      LDD T2
+06180         SUBD T1
+06190         LSRA
+06200         RORB
+06210         ADDD T1
+06220         STD TMID
+06230         LDD T1
+06240         LSRA
+06250         RORB
+06260         STD TF
+06270         LDD T2
+06280         ADDD TMID
+06290         STD T3
+06300         LDD TSP
+06310         LSRA
+06320         RORB
+06330         STD TEMP
+06340         ADDD TSP
+06350         ADDD TSP
+06360         ADDD TSP
+06370         CMPD TMID
+06380         BGT SKP2
+06390         CMPD TF
+06400         BGT SKP1
+06410 SKP2    LDD TMID
+06420         SUBD TEMP
+06430 SKP1    ADDD TEMP
+06440         STD TSP
+06450         CLR RC
+06460         INC RC
+06470         LDA #8
+06480         STA MCT
+06490 R11     LDA $FF20
+06500         ORA #$FE
+06510         PSHS A
+06520         LBSR UPSTK
+06530         LDA RFLG
+06540         BEQ R47
+06550         LBRA RCVR
+06560 R47     LDA JXMT
+06570         BEQ R48
+06580         LBRA XMIT
+06590 R48     LDA RSTR
+06600         BEQ R84
+06610         LBRA START
+06620 R84     PULS A
+06630         CMPA IR
+06640         BEQ R11
+06650 R15     LDX #0
+06660         LSL RC
+06670         LDA #$9F
+06680         STA $0401
+06690         LDA #$AF
+06700         STA $0400
+06710 R12     LEAX 1,X
+06720         PSHS X
+06730         LBSR UPSTK
+06740         LDA RFLG
+06750         BEQ R30
+06760         LBRA RCVR
+06770 R30     LDA JXMT
+06780         BEQ R31
+06790         LBRA XMIT
+06800 R31     LDA RSTR
+06810         BEQ R85
+06820         LBRA START
+06830 R85     PULS X
+06840 R29     LDA $FF20
+06850         ORA #$FE
+06860         CMPX T3
+06870         BLT R49
+06880         LBRA RCVR
+06890 R49     CMPA IR
+06900         BNE R12
+06910         LDB TIME+1
+06920 R60     LDA $FF20
+06930         ORA #$FE
+06940         LEAX 1,X
+06950         CMPA IR
+06960         BEQ R61
+06970         BRA R12
+06980 R61     DECB
+06990         BNE R60
+07000         CMPX TF
+07010         LBLT R12
+07020         LEAX -25,X
+07030         CMPX TMID
+07040         BLE R13
+07050         INC RC
+07060 R13     DEC MCT
+07070         BNE R45
+07080         LBRA RCVR
+07090 R45     LDA #8
+07100         STA MCT
+07110         LDA #$9F
+07120         STA $0400
+07130         LDA #$AF
+07140         STA $0401
+07150         LDX TIME
+07160 R14     LEAX 3,X
+07170         PSHS X
+07180         LBSR UPSTK
+07190         LDA RFLG
+07200         BEQ R32
+07210         LBRA RCVR
+07220 R32     LDA JXMT
+07230         BEQ R33
+07240         LBRA XMIT
+07250 R33     LDA RSTR
+07260         BEQ R86
+07270         LBRA START
+07280 R86     PULS X
+07290         LDA $FF20
+07300         ORA #$FE
+07310         CMPA IR
+07320         LBNE R15
+07330         CMPX TSP
+07340         BLT R14
+07350         LDA $0405
+07360         EORA #15
+07370         STA $0405
+07380         LBSR PUT
+07390         CLR RC
+07400         INC RC
+07410         LDX #0
+07420         LDD T3
+07430         ADDD T3
+07440         ADDD T2
+07450         STD TEMP
+07460 R18     LEAX 1,X
+07470         LDA $FF20
+07480         ORA #$FE
+07490         CMPX TEMP
+07500         BLT R17
+07510         LDA #$60
+07520         LBSR CHRCV
+07530         LBRA R11
+07540 R17     CMPA IR
+07550         BEQ R18
+07560         LBRA R15
+07570 PUT     CLRA
+07580         LDX #TABLE
+07590 P2      LDB ,X+
+07600         INCA
+07610         CMPB RC
+07620         BEQ P1
+07630         CMPA #64
+07640         BLT P2
+07650 P3      PULS X
+07660         LBRA RCVR
+07670 P1      DECA
+07680         CMPB #0
+07690         BEQ P3
+07700         LBSR CHRCV
+07710         RTS
+07720 TABLE   FCB $31
+07730         FCB $05
+07740         FCB $18
+07750         FCB $1A
+07760         FCB $0C
+07770         FCB $02
+07780         FCB $12
+07790         FCB $0E
+07800         FCB $10
+07810         FCB $04
+07820         FCB $17
+07830         FCB $0D
+07840         FCB $14
+07850         FCB $07
+07860         FCB $06
+07870         FCB $0F
+07880         FCB $16
+07890         FCB $1D
+07900         FCB $0A
+07910         FCB $08
+07920         FCB $03
+07930         FCB $09
+07940         FCB $11
+07950         FCB $0B
+07960         FCB $19
+07970         FCB $1B
+07980         FCB $1C
+07990         FCB $00
+08000         FCB $00
+08010         FCB $00
+08020         FCB $00
+08030         FCB $00
+08040         FCB $00
+08050         FCB $00
+08060         FCB $52
+08070         FCB $00
+08080         FCB $89
+08090         FCB $00
+08100         FCB $00
+08110         FCB $5E
+08120         FCB $6D
+08130         FCB $6D
+08140         FCB $00
+08150         FCB $36
+08160         FCB $73
+08170         FCB $61
+08180         FCB $55
+08190         FCB $32
+08200         FCB $3F
+08210         FCB $2F
+08220         FCB $27
+08230         FCB $23
+08240         FCB $21
+08250         FCB $20
+08260         FCB $30
+08270         FCB $38
+08280         FCB $3C
+08290         FCB $3E
+08300         FCB $78
+08310         FCB $6A
+08320         FCB $45
+08330         FCB $00
+08340         FCB $2A
+08350         FCB $4C
+08360 STACK   FCB 0
+08370         END

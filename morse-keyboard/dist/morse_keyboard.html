@@ -1,0 +1,1106 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Morse Keyboard</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=IBM+Plex+Mono:wght@400;500&family=IBM+Plex+Sans:wght@400;500;600&family=Silkscreen:wght@400;700&display=swap">
+<style>
+/* Layout: a framed CRT on the left, controls beside it; stacks on a phone. Same family look as the Diving Bell page. */
+:root {
+  --abyss: #0b1623;
+  --trench: #112638;
+  --silt: #1d3a52;
+  --foam: #e8f1f5;
+  --mist: #93aab8;
+  --ember: #ff8a1f;
+  --kelp: #2fd07a;
+  --alarm: #ff5a4d;
+  --display: 'Silkscreen', 'Courier New', monospace;
+  --body: 'IBM Plex Sans', system-ui, sans-serif;
+  --mono: 'IBM Plex Mono', ui-monospace, monospace;
+  color-scheme: dark;
+}
+* { box-sizing: border-box; }
+html, body { margin: 0; }
+body {
+  background: var(--abyss);
+  background-image: radial-gradient(120% 80% at 50% -10%, #17324a 0%, var(--abyss) 60%);
+  background-attachment: fixed;
+  color: var(--foam);
+  font: 15px/1.5 var(--body);
+  padding-block: 20px 40px;
+  padding-left: max(16px, env(safe-area-inset-left, 0px));
+  padding-right: max(16px, env(safe-area-inset-right, 0px));
+  -webkit-tap-highlight-color: transparent;
+}
+.wrap { max-width: 1040px; margin: 0 auto; }
+h1 { font: 700 clamp(26px, 5vw, 40px)/1 var(--display); letter-spacing: .04em; margin: 0; text-transform: uppercase; text-wrap: balance; }
+h1 span { color: var(--ember); }
+.lede { color: var(--mist); margin: 8px 0 0; max-width: 62ch; }
+.game { display: grid; grid-template-columns: minmax(0, 1fr) 320px; gap: 20px; margin-top: 18px; align-items: start; }
+@media (max-width: 860px) { .game { grid-template-columns: minmax(0, 1fr); } }
+.bezel { background: #05090f; border: 2px solid var(--silt); border-radius: 14px; padding: 12px; box-shadow: 0 0 0 1px #000, 0 18px 50px -18px #000; }
+.crt { position: relative; aspect-ratio: 4 / 3; background: #000; border-radius: 6px; overflow: hidden; }
+.crt canvas { display: block; width: 100%; height: 100%; image-rendering: pixelated; image-rendering: crisp-edges; }
+.crt::after { content: ""; position: absolute; inset: 0; pointer-events: none; background: repeating-linear-gradient(0deg, rgba(0,0,0,.14) 0 1px, transparent 1px 3px); mix-blend-mode: multiply; }
+.statusbar { display: flex; flex-wrap: wrap; gap: 6px 18px; align-items: center; margin-top: 10px; font: 500 13px var(--mono); color: var(--mist); }
+.statusbar b { color: var(--foam); font-weight: 500; }
+.lamp { display: inline-flex; align-items: center; gap: 6px; }
+.lamp i { width: 11px; height: 11px; border-radius: 50%; background: #2a3b4a; border: 1px solid #000; box-shadow: inset 0 0 0 1px #3d566b; }
+.lamp.on i { background: var(--ember); box-shadow: 0 0 9px 2px rgba(255,138,31,.65); border-color: #7a3b00; }
+.side { display: flex; flex-direction: column; gap: 14px; min-width: 0; }
+.panel { background: var(--trench); border: 1px solid var(--silt); border-radius: 10px; padding: 14px; }
+.panel h2 { font: 400 12px var(--display); letter-spacing: .12em; text-transform: uppercase; color: var(--ember); margin: 0 0 10px; }
+.keys { display: grid; grid-template-columns: auto 1fr; gap: 6px 12px; margin: 0; font-size: 14px; }
+.keys dt { font: 500 12px var(--mono); color: var(--foam); background: var(--abyss); border: 1px solid var(--silt); border-radius: 4px; padding: 1px 7px; white-space: nowrap; justify-self: start; }
+.keys dd { margin: 0; color: var(--mist); }
+.row { display: flex; flex-wrap: wrap; gap: 8px; }
+.keypad { display: grid; grid-template-columns: repeat(4, minmax(0, 1fr)); gap: 8px; margin-top: 12px; }
+button, select { font: 500 14px var(--body); color: var(--foam); background: var(--silt); border: 1px solid #2c5472; border-radius: 8px; padding: 9px 13px; min-height: 40px; cursor: pointer; }
+.keypad button { padding: 8px 4px; font-size: 13px; }
+button:hover, select:hover { background: #26496a; }
+button:focus-visible, select:focus-visible, canvas:focus-visible, textarea:focus-visible, input:focus-visible { outline: 2px solid var(--ember); outline-offset: 2px; }
+button.primary { background: var(--ember); color: #1b0e00; border-color: var(--ember); font-weight: 600; }
+button.primary:hover { background: #ffa04a; }
+button[aria-pressed="true"] { border-color: var(--ember); color: var(--ember); }
+button.on { background: var(--ember); color: #1b0e00; border-color: #ffc48a; }
+button:disabled { opacity: .5; cursor: default; }
+label.field { display: flex; flex-direction: column; gap: 4px; font: 500 12px var(--mono); color: var(--mist); flex: 1 1 100%; min-width: 0; }
+label.field select { width: 100%; }
+textarea, input[type=text] { width: 100%; background: var(--abyss); color: var(--foam); border: 1px solid var(--silt); border-radius: 6px; padding: 8px; font: 14px var(--mono); }
+textarea { min-height: 64px; resize: vertical; text-transform: uppercase; }
+.typebox { margin-top: 12px; }
+.check { display: flex; gap: 8px; align-items: flex-start; font-size: 13px; color: var(--mist); }
+.check input { margin-top: 4px; }
+.msg { font: 500 13px/1.45 var(--mono); padding: 8px 10px; border-radius: 6px; background: var(--abyss); border: 1px solid var(--silt); color: var(--mist); min-height: 2.6em; }
+.about p { margin: 0 0 8px; color: var(--mist); font-size: 14px; }
+.about p:last-child { margin: 0; }
+.about b { color: var(--foam); font-weight: 600; }
+.key { width: 100%; min-height: 56px; font: 700 15px var(--display); letter-spacing: .06em; touch-action: none; user-select: none; -webkit-user-select: none; }
+.small { font-size: 13px; color: var(--mist); margin: 8px 0 0; }
+ol.steps { margin: 0; padding-left: 20px; color: var(--mist); font-size: 14px; }
+ol.steps li { margin-bottom: 4px; }
+ol.steps b { color: var(--foam); font-weight: 500; }
+@media (prefers-reduced-motion: reduce) { * { transition: none !important; animation: none !important; } }
+</style>
+</head>
+<body>
+<div class="wrap">
+  <h1>Morse <span>Keyboard</span></h1>
+  <p class="lede">A Radio Shack Color Computer program by Bill Mandel, rebuilt from a fanfold printout. The original 6809 program runs here in an emulator: type text and it sends Morse, or let it listen and decode. Play it a recording of real on-air CW and watch it learn the timing.</p>
+
+  <div class="game">
+    <div>
+      <div class="bezel">
+        <div class="crt"><canvas id="screen" width="512" height="384" tabindex="0" aria-label="Color Computer screen. Click here, then type."></canvas></div>
+        <div class="statusbar" aria-live="off">
+          <span>Mode <b id="hudMode">Setup</b></span>
+          <span>Speed <b id="hudSpeed">-</b></span>
+          <span class="lamp" id="lampKey"><i></i>Key out</span>
+          <span class="lamp" id="lampIn"><i></i>Key in</span>
+          <span>Sound <b id="hudSound">click the screen</b></span>
+        </div>
+      </div>
+      <div class="keypad" id="keypad">
+        <button data-k="94" title="Up arrow">&#9650; Transmit</button>
+        <button data-k="10" title="Down arrow">&#9660; Receive</button>
+        <button data-k="8" title="Left arrow">&#9664; Back</button>
+        <button data-k="9" title="Right arrow">Restart &#9654;</button>
+        <button data-k="3" title="Break key">Break</button>
+        <button data-k="12" title="Clear key">Clear</button>
+        <button data-k="13" title="Enter key">Enter</button>
+        <button data-k="83" title="S key, starts from the instruction screen">S</button>
+      </div>
+      <div class="typebox">
+        <input type="text" id="kbd" placeholder="Tap here to type on a phone" autocomplete="off" autocapitalize="characters" autocorrect="off" spellcheck="false" aria-label="Type to the Color Computer">
+      </div>
+    </div>
+
+    <div class="side">
+      <div class="panel">
+        <h2>Quick start</h2>
+        <ol class="steps">
+          <li>Click the screen, press <b>S</b>.</li>
+          <li>Type a speed in words per minute, such as <b>20</b>, then <b>Enter</b>.</li>
+          <li>Press <b>Up arrow</b> for transmit mode. Type a message, then <b>Enter</b> to send it.</li>
+          <li>Press <b>Down arrow</b> for receive mode, then use Station B or the key below.</li>
+        </ol>
+      </div>
+
+      <div class="panel">
+        <h2>Program</h2>
+        <label class="field">Version
+          <select id="progVer"><option value="patched" selected>Patched receiver (decodes ordinary CW)</option><option value="original">As printed</option></select>
+        </label>
+        <p class="small">As printed only decodes this program's own sending rhythm. The patched version changes two receive-side calculations, the letter-gap threshold and the word-gap timeout, so ordinary Morse spacing works. Sending is identical. Changing version restarts the program.</p>
+        <p class="small"><a href="listing/morse_listing.html">Source listing</a> and <a href="listing/morse_listing_patched.html">patched source</a>, highlighted and commented.</p>
+      </div>
+
+      <div class="panel">
+        <h2>Station B</h2>
+        <p class="small" style="margin-top:0">A second Color Computer running the same program. Its key line is wired to your cassette input.</p>
+        <label class="field" style="margin-top:10px">Message to send you
+          <textarea id="bText" maxlength="160" aria-label="Message for Station B to send">CQ CQ DE W6XYZ</textarea>
+        </label>
+        <div class="row" style="margin-top:10px">
+          <label class="field" style="flex:1 1 120px">Speed
+            <select id="bWpm"><option>8</option><option>10</option><option>12</option><option selected>15</option><option>20</option><option>25</option><option>30</option></select>
+          </label>
+          <button class="primary" id="bSend" style="align-self:flex-end">Send to me</button>
+        </div>
+        <label class="check" style="margin-top:10px"><input type="checkbox" id="bPre" checked><span>Start with a V. The receiver learns dit and dah lengths from the first tones, so the first letter is used up.</span></label>
+        <div class="msg" id="bMsg" style="margin-top:10px">Put your station in receive mode first.</div>
+      </div>
+
+      <div class="panel">
+        <h2>Recording</h2>
+        <p class="small" style="margin-top:0">Play an mp3, aac, ogg or wav of Morse into your receiver. Put your station in receive mode and set a speed first. The patched receiver read a real on-air ragchew (Italian, 7036 kHz) at 16 to 36 WPM. As printed, the program only decodes its own sending rhythm, so the same recording comes out as E and T.</p>
+        <label class="field" style="margin-top:10px">Audio file
+          <input type="file" id="aFile" accept="audio/*,.mp3,.aac,.m4a,.ogg,.wav">
+        </label>
+        <label class="field" style="margin-top:10px">Or fetch a recording
+          <select id="aPreset"><option value="">Choose one...</option><option value="https://archive.org/download/U.S._Armed_Forces_Institute_Basic_Radio_Code_ca1942/20B_Sixteen_Words_Per_Minute_64kb.mp3">1942 U.S. War Department code course, 16 WPM (5 min, 2.4 MB)</option></select>
+        </label>
+        <div class="row" style="margin-top:8px"><input type="text" id="aUrl" placeholder="or paste an audio URL (needs CORS)" aria-label="Audio URL" style="flex:1 1 180px"><button id="aFetch">Fetch</button></div>
+        <p class="small">The 1942 course is five-character groups of letters and digits, sent by hand at about 20 WPM. It is from archive.org, a U.S. government work and likely public domain, though the item itself carries no rights mark. Your browser fetches it straight from archive.org when you click.</p>
+        <label class="field" style="margin-top:10px">Input
+          <select id="aMode"><option value="detector">Tone decoder (finds the pitch, ignores noise)</option><option value="raw">Raw polarity, as from a radio earphone jack (pitch sensitive)</option></select>
+        </label>
+        <div class="row" style="margin-top:10px"><button class="primary" id="aPlay" disabled>Play into receiver</button><button id="aStop" disabled>Stop</button></div>
+        <div class="msg" id="aMsg" style="margin-top:10px">No file loaded.</div>
+      </div>
+
+      <div class="panel">
+        <h2>Straight key</h2>
+        <button class="key" id="key" aria-label="Hold to key your receiver input">HOLD TO KEY</button>
+        <p class="small">Or hold Ctrl. This drives the same input as Station B. The patched receiver copes with ordinary spacing. As printed, the receiver expects the short gaps this program sends itself, so a hand key needs tight spacing inside each letter.</p>
+        <div class="row" style="margin-top:10px">
+          <label class="field" style="flex:1 1 100%">Transmit sound
+            <select id="txTone"><option value="sidetone" selected>Clean sidetone, keyed by the relay</option><option value="dac">The program's own tone (square wave)</option></select>
+          </label>
+          <label class="field" style="flex:1 1 100%">Sidetone pitch <input type="range" id="pitch" min="400" max="1000" step="10" value="700" aria-label="Sidetone pitch"> <span id="pitchHz">700 Hz</span></label>
+          <button id="btnSound" aria-pressed="false">Sound off</button>
+          <label class="field" style="flex:1 1 140px">Volume <input type="range" id="volume" min="0" max="100" value="80" aria-label="Volume"></label>
+          <button id="btnReset">Power cycle</button>
+        </div>
+      </div>
+
+      <div class="panel">
+        <h2>Keys</h2>
+        <dl class="keys">
+          <dt>Up</dt><dd>Transmit mode</dd>
+          <dt>Down</dt><dd>Receive mode</dd>
+          <dt>Left / Backspace</dt><dd>Backspace</dd>
+          <dt>Right</dt><dd>Restart program</dd>
+          <dt>Esc</dt><dd>Break: clear buffer and screen</dd>
+          <dt>Home / Del</dt><dd>Clear: clear buffer</dd>
+          <dt>@ + &lt; &gt;</dt><dd>BT, KN, SK, AR</dd>
+        </dl>
+      </div>
+
+      <div class="panel about">
+        <h2>About</h2>
+        <p>The 2,338 bytes at $3462 to $3D83 are assembled from the printed listing and checked against its object code, byte for byte. As printed, they run unmodified. The patched version changes two receive-side calculations (16 lines differ) and is the default here.</p>
+        <p>The program times everything by counting loop passes, and each pass includes Color BASIC's keyboard routine. That routine is replaced by a stand-in timed so a dit lasts 1.2 / WPM seconds. The real cost is inferred, not known.</p>
+        <p>The program's first received letter is used up learning dit and dah lengths, and it learns once per run. Station B sends a leading V for that reason. Sending a recording after a pause works the same way. Watch the top-left corner of the screen: it starts flashing yellow and blue once the dit and dah lengths are learned and tones are being timed.</p>
+        <p>Read the <a href="listing/morse_listing.html">annotated listing</a> or the <a href="listing/morse_listing_patched.html">patched one</a>, with the changed lines highlighted.</p>
+      </div>
+    </div>
+  </div>
+</div>
+
+<script>
+// MC6809 CPU core. Memory/IO supplied by the owner via rd(addr) / wr(addr,val).
+function CPU6809(rd, wr, CYC) {
+  var c = this;
+  c.a = 0; c.b = 0; c.x = 0; c.y = 0; c.u = 0; c.s = 0; c.pc = 0; c.dp = 0; c.cc = 0x50;
+  c.cycles = 0; c.irq = false; c.halted = false; c.waiting = false;
+  var E = 0x80, F = 0x40, H = 0x20, I = 0x10, N = 8, Z = 4, V = 2, C = 1;
+
+  function rd16(a) { return (rd(a & 0xFFFF) << 8) | rd((a + 1) & 0xFFFF); }
+  function wr16(a, v) { wr(a & 0xFFFF, (v >> 8) & 255); wr((a + 1) & 0xFFFF, v & 255); }
+  function fetch() { var v = rd(c.pc); c.pc = (c.pc + 1) & 0xFFFF; return v; }
+  function fetch16() { var v = (rd(c.pc) << 8) | rd((c.pc + 1) & 0xFFFF); c.pc = (c.pc + 2) & 0xFFFF; return v; }
+  function sx8(v) { return v & 0x80 ? v - 256 : v; }
+  function sx16(v) { return v & 0x8000 ? v - 65536 : v; }
+  function setNZ8(v) { c.cc = (c.cc & ~(N | Z)) | (v & 0x80 ? N : 0) | ((v & 255) === 0 ? Z : 0); }
+  function setNZ16(v) { c.cc = (c.cc & ~(N | Z)) | (v & 0x8000 ? N : 0) | ((v & 0xFFFF) === 0 ? Z : 0); }
+  function D() { return (c.a << 8) | c.b; }
+  function setD(v) { c.a = (v >> 8) & 255; c.b = v & 255; }
+
+  // ---- ALU
+  function add8(p, q, cin) {
+    var r = p + q + cin, f = c.cc & ~(H | N | Z | V | C);
+    if (((p & 15) + (q & 15) + cin) > 15) f |= H;
+    if (r > 255) f |= C;
+    if (~(p ^ q) & (p ^ r) & 0x80) f |= V;
+    r &= 255; if (r & 0x80) f |= N; if (!r) f |= Z; c.cc = f; return r;
+  }
+  function sub8(p, q, cin) {
+    var r = p - q - cin, f = c.cc & ~(N | Z | V | C);
+    if (r < 0) f |= C;
+    if ((p ^ q) & (p ^ r) & 0x80) f |= V;
+    r &= 255; if (r & 0x80) f |= N; if (!r) f |= Z; c.cc = f; return r;
+  }
+  function add16(p, q) {
+    var r = p + q, f = c.cc & ~(N | Z | V | C);
+    if (r > 0xFFFF) f |= C;
+    if (~(p ^ q) & (p ^ r) & 0x8000) f |= V;
+    r &= 0xFFFF; if (r & 0x8000) f |= N; if (!r) f |= Z; c.cc = f; return r;
+  }
+  function sub16(p, q) {
+    var r = p - q, f = c.cc & ~(N | Z | V | C);
+    if (r < 0) f |= C;
+    if ((p ^ q) & (p ^ r) & 0x8000) f |= V;
+    r &= 0xFFFF; if (r & 0x8000) f |= N; if (!r) f |= Z; c.cc = f; return r;
+  }
+  function and8(p, q) { var r = p & q; setNZ8(r); c.cc &= ~V; return r; }
+  function or8(p, q) { var r = p | q; setNZ8(r); c.cc &= ~V; return r; }
+  function eor8(p, q) { var r = p ^ q; setNZ8(r); c.cc &= ~V; return r; }
+  function ld8(v) { setNZ8(v); c.cc &= ~V; return v; }
+  function ld16(v) { setNZ16(v); c.cc &= ~V; return v; }
+  // read-modify-write unary ops (value in, value out)
+  function neg(v) { return sub8(0, v, 0); }
+  function com(v) { var r = (~v) & 255; setNZ8(r); c.cc = (c.cc & ~V) | C; return r; }
+  function lsr(v) { var r = v >> 1; c.cc = (c.cc & ~(N | Z | C)) | (v & 1 ? C : 0) | (r ? 0 : Z); return r; }
+  function ror(v) { var r = (v >> 1) | (c.cc & C ? 0x80 : 0); c.cc = (c.cc & ~(N | Z | C)) | (v & 1 ? C : 0) | (r & 0x80 ? N : 0) | (r ? 0 : Z); return r; }
+  function asr(v) { var r = (v >> 1) | (v & 0x80); c.cc = (c.cc & ~(N | Z | C)) | (v & 1 ? C : 0) | (r & 0x80 ? N : 0) | (r ? 0 : Z); return r; }
+  function asl(v) {
+    var r = (v << 1) & 255, cy = v & 0x80 ? 1 : 0, n = r & 0x80 ? 1 : 0;
+    c.cc = (c.cc & ~(N | Z | V | C)) | (cy ? C : 0) | (n ? N : 0) | (r ? 0 : Z) | ((n ^ cy) ? V : 0); return r;
+  }
+  function rol(v) {
+    var r = ((v << 1) | (c.cc & C ? 1 : 0)) & 255, cy = v & 0x80 ? 1 : 0, n = r & 0x80 ? 1 : 0;
+    c.cc = (c.cc & ~(N | Z | V | C)) | (cy ? C : 0) | (n ? N : 0) | (r ? 0 : Z) | ((n ^ cy) ? V : 0); return r;
+  }
+  function dec(v) { var r = (v - 1) & 255; c.cc = (c.cc & ~(N | Z | V)) | (r & 0x80 ? N : 0) | (r ? 0 : Z) | (r === 0x7F ? V : 0); return r; }
+  function inc(v) { var r = (v + 1) & 255; c.cc = (c.cc & ~(N | Z | V)) | (r & 0x80 ? N : 0) | (r ? 0 : Z) | (r === 0x80 ? V : 0); return r; }
+  function tst(v) { setNZ8(v); c.cc &= ~V; return v; }
+  function clr() { c.cc = (c.cc & ~(N | V | C)) | Z; return 0; }
+
+  var extra = 0; // extra cycles from indexed postbyte
+  function idxReg(sel) { return sel === 0 ? c.x : sel === 1 ? c.y : sel === 2 ? c.u : c.s; }
+  function setIdxReg(sel, v) { v &= 0xFFFF; if (sel === 0) c.x = v; else if (sel === 1) c.y = v; else if (sel === 2) c.u = v; else c.s = v; }
+  function indexed() {
+    var p = fetch(), sel = (p >> 5) & 3, ea, ind = false;
+    if (!(p & 0x80)) {
+      var off = p & 0x1F; if (off & 0x10) off -= 32;
+      extra = 1; return (idxReg(sel) + off) & 0xFFFF;
+    }
+    ind = !!(p & 0x10);
+    switch (p & 0x0F) {
+      case 0: ea = idxReg(sel); setIdxReg(sel, ea + 1); extra = 2; break;
+      case 1: ea = idxReg(sel); setIdxReg(sel, ea + 2); extra = 3; break;
+      case 2: setIdxReg(sel, idxReg(sel) - 1); ea = idxReg(sel); extra = 2; break;
+      case 3: setIdxReg(sel, idxReg(sel) - 2); ea = idxReg(sel); extra = 3; break;
+      case 4: ea = idxReg(sel); extra = 0; break;
+      case 5: ea = idxReg(sel) + sx8(c.b); extra = 1; break;
+      case 6: ea = idxReg(sel) + sx8(c.a); extra = 1; break;
+      case 8: ea = idxReg(sel) + sx8(fetch()); extra = 1; break;
+      case 9: ea = idxReg(sel) + fetch16(); extra = 4; break;
+      case 11: ea = idxReg(sel) + D(); extra = 4; break;
+      case 12: { var o = sx8(fetch()); ea = c.pc + o; extra = 1; break; }
+      case 13: { var o16 = fetch16(); ea = c.pc + o16; extra = 5; break; }
+      case 15: ea = fetch16(); extra = 5; ind = true; break;
+      default: ea = 0; extra = 0; break; // illegal
+    }
+    ea &= 0xFFFF;
+    if (ind) { ea = rd16(ea); extra += 3; if ((p & 0x0F) === 15) extra -= 3; }
+    return ea;
+  }
+
+  function branchCond(k) {
+    var cc = c.cc;
+    switch (k) {
+      case 0: return true; case 1: return false;
+      case 2: return !(cc & (C | Z)); case 3: return !!(cc & (C | Z));
+      case 4: return !(cc & C); case 5: return !!(cc & C);
+      case 6: return !(cc & Z); case 7: return !!(cc & Z);
+      case 8: return !(cc & V); case 9: return !!(cc & V);
+      case 10: return !(cc & N); case 11: return !!(cc & N);
+      case 12: return !!(cc & N) === !!(cc & V);
+      case 13: return !!(cc & N) !== !!(cc & V);
+      case 14: return !(cc & Z) && (!!(cc & N) === !!(cc & V));
+      default: return !!(cc & Z) || (!!(cc & N) !== !!(cc & V));
+    }
+  }
+
+  // stack helpers
+  function pushS8(v) { c.s = (c.s - 1) & 0xFFFF; wr(c.s, v & 255); }
+  function pushS16(v) { pushS8(v); pushS8(v >> 8); }
+  function pullS8() { var v = rd(c.s); c.s = (c.s + 1) & 0xFFFF; return v; }
+  function pullS16() { var h = pullS8(); return (h << 8) | pullS8(); }
+  function pushU8(v) { c.u = (c.u - 1) & 0xFFFF; wr(c.u, v & 255); }
+  function pushU16(v) { pushU8(v); pushU8(v >> 8); }
+  function pullU8() { var v = rd(c.u); c.u = (c.u + 1) & 0xFFFF; return v; }
+  function pullU16() { var h = pullU8(); return (h << 8) | pullU8(); }
+
+  function pshs(m) {
+    var n = 0;
+    if (m & 0x80) { pushS16(c.pc); n += 2; } if (m & 0x40) { pushS16(c.u); n += 2; }
+    if (m & 0x20) { pushS16(c.y); n += 2; } if (m & 0x10) { pushS16(c.x); n += 2; }
+    if (m & 0x08) { pushS8(c.dp); n++; } if (m & 0x04) { pushS8(c.b); n++; }
+    if (m & 0x02) { pushS8(c.a); n++; } if (m & 0x01) { pushS8(c.cc); n++; }
+    return n;
+  }
+  function puls(m) {
+    var n = 0;
+    if (m & 0x01) { c.cc = pullS8(); n++; } if (m & 0x02) { c.a = pullS8(); n++; }
+    if (m & 0x04) { c.b = pullS8(); n++; } if (m & 0x08) { c.dp = pullS8(); n++; }
+    if (m & 0x10) { c.x = pullS16(); n += 2; } if (m & 0x20) { c.y = pullS16(); n += 2; }
+    if (m & 0x40) { c.u = pullS16(); n += 2; } if (m & 0x80) { c.pc = pullS16(); n += 2; }
+    return n;
+  }
+  function pshu(m) {
+    var n = 0;
+    if (m & 0x80) { pushU16(c.pc); n += 2; } if (m & 0x40) { pushU16(c.s); n += 2; }
+    if (m & 0x20) { pushU16(c.y); n += 2; } if (m & 0x10) { pushU16(c.x); n += 2; }
+    if (m & 0x08) { pushU8(c.dp); n++; } if (m & 0x04) { pushU8(c.b); n++; }
+    if (m & 0x02) { pushU8(c.a); n++; } if (m & 0x01) { pushU8(c.cc); n++; }
+    return n;
+  }
+  function pulu(m) {
+    var n = 0;
+    if (m & 0x01) { c.cc = pullU8(); n++; } if (m & 0x02) { c.a = pullU8(); n++; }
+    if (m & 0x04) { c.b = pullU8(); n++; } if (m & 0x08) { c.dp = pullU8(); n++; }
+    if (m & 0x10) { c.x = pullU16(); n += 2; } if (m & 0x20) { c.y = pullU16(); n += 2; }
+    if (m & 0x40) { c.s = pullU16(); n += 2; } if (m & 0x80) { c.pc = pullU16(); n += 2; }
+    return n;
+  }
+
+  function getReg(n) {
+    switch (n) {
+      case 0: return D(); case 1: return c.x; case 2: return c.y; case 3: return c.u; case 4: return c.s; case 5: return c.pc;
+      case 8: return c.a; case 9: return c.b; case 10: return c.cc; case 11: return c.dp; default: return 0xFF;
+    }
+  }
+  function setReg(n, v) {
+    switch (n) {
+      case 0: setD(v); break; case 1: c.x = v & 0xFFFF; break; case 2: c.y = v & 0xFFFF; break; case 3: c.u = v & 0xFFFF; break;
+      case 4: c.s = v & 0xFFFF; break; case 5: c.pc = v & 0xFFFF; break;
+      case 8: c.a = v & 255; break; case 9: c.b = v & 255; break; case 10: c.cc = v & 255; break; case 11: c.dp = v & 255; break;
+    }
+  }
+  function tfrExg(post, exg) {
+    var s = post >> 4, d = post & 15;
+    var sv = getReg(s), dv = getReg(d);
+    var s16 = s < 8, d16 = d < 8;
+    // mixed sizes: 8-bit sources are extended with $FF (hardware behaviour); keep simple
+    if (s16 && !d16) sv &= 255; else if (!s16 && d16) sv = 0xFF00 | sv;
+    if (exg) {
+      if (d16 && !s16) dv = 0xFF00 | dv; else if (!d16 && s16) dv &= 255;
+      setReg(d, sv); setReg(s, dv);
+    } else setReg(d, sv);
+  }
+
+  function interrupt(vec, full, mask) {
+    if (full) { c.cc |= E; pshs(0xFF); } else { c.cc &= ~E; pshs(0x81); }
+    c.cc |= mask; c.pc = rd16(vec);
+  }
+
+  function daa() {
+    var a = c.a, cf = 0, lo = a & 15, hi = a >> 4;
+    if ((c.cc & H) || lo > 9) cf |= 0x06;
+    if ((c.cc & C) || hi > 9 || (hi > 8 && lo > 9)) cf |= 0x60;
+    var r = a + cf; var cy = (c.cc & C) || r > 255;
+    c.a = r & 255; setNZ8(c.a); c.cc = (c.cc & ~(C | V)) | (cy ? C : 0);
+  }
+
+  c.step = function () {
+    if (c.irq && !(c.cc & I)) {
+      c.waiting = false; interrupt(0xFFF8, true, I | F); c.cycles += 19; return 19;
+    }
+    if (c.waiting) { c.cycles += 1; return 1; }
+    var op = fetch(), page = 0, ea = 0, m = 0, t = 0;
+    extra = 0;
+    if (op === 0x10) { page = 256; op = fetch(); } else if (op === 0x11) { page = 512; op = fetch(); }
+    var cyc = CYC[page + op] || 2;
+
+    if (page === 0) {
+      var hi = op >> 4, lo = op & 15;
+      // ---- 0x00-0x0F direct RMW, 0x60-0x6F indexed RMW, 0x70-0x7F extended RMW
+      if (hi === 0 || hi === 6 || hi === 7) {
+        if (lo === 0x0E || lo === 0x0F) {
+          if (lo === 0x0E) { // JMP
+            ea = hi === 0 ? ((c.dp << 8) | fetch()) : hi === 6 ? indexed() : fetch16();
+            c.pc = ea;
+          } else { // CLR
+            ea = hi === 0 ? ((c.dp << 8) | fetch()) : hi === 6 ? indexed() : fetch16();
+            rd(ea); wr(ea, clr());
+          }
+          c.cycles += cyc + extra; return cyc + extra;
+        }
+        if (lo === 0x0B || lo === 0x02 || lo === 0x05 || lo === 0x0D && false) { /* illegal */ c.cycles += cyc; return cyc; }
+        ea = hi === 0 ? ((c.dp << 8) | fetch()) : hi === 6 ? indexed() : fetch16();
+        m = rd(ea);
+        switch (lo) {
+          case 0: m = neg(m); break; case 3: m = com(m); break; case 4: m = lsr(m); break;
+          case 6: m = ror(m); break; case 7: m = asr(m); break; case 8: m = asl(m); break;
+          case 9: m = rol(m); break; case 10: m = dec(m); break; case 12: m = inc(m); break;
+          case 13: tst(m); c.cycles += cyc + extra; return cyc + extra;
+          default: c.cycles += cyc; return cyc;
+        }
+        wr(ea, m); c.cycles += cyc + extra; return cyc + extra;
+      }
+      switch (hi) {
+        case 1:
+          switch (lo) {
+            case 2: break; // NOP
+            case 3: c.waiting = true; break; // SYNC (simplified)
+            case 6: t = fetch16(); c.pc = (c.pc + t) & 0xFFFF; break; // LBRA
+            case 7: t = fetch16(); pushS16(c.pc); c.pc = (c.pc + t) & 0xFFFF; break; // LBSR
+            case 9: daa(); break;
+            case 10: c.cc |= fetch(); break; // ORCC
+            case 12: c.cc &= fetch(); break; // ANDCC
+            case 13: c.a = (c.b & 0x80) ? 255 : 0; setNZ8(c.b); break; // SEX -> D
+            case 14: tfrExg(fetch(), true); break;
+            case 15: tfrExg(fetch(), false); break;
+            default: break;
+          }
+          break;
+        case 2: // short branches
+          t = sx8(fetch()); if (branchCond(lo)) c.pc = (c.pc + t) & 0xFFFF; break;
+        case 3:
+          switch (lo) {
+            case 0: c.x = indexed(); c.cc = (c.cc & ~Z) | (c.x ? 0 : Z); break;
+            case 1: c.y = indexed(); c.cc = (c.cc & ~Z) | (c.y ? 0 : Z); break;
+            case 2: c.s = indexed(); break;
+            case 3: c.u = indexed(); break;
+            case 4: t = fetch(); cyc += pshs(t); break;
+            case 5: t = fetch(); cyc += puls(t); break;
+            case 6: t = fetch(); cyc += pshu(t); break;
+            case 7: t = fetch(); cyc += pulu(t); break;
+            case 9: c.pc = pullS16(); break; // RTS
+            case 10: c.x = (c.x + c.b) & 0xFFFF; break; // ABX
+            case 11: // RTI
+              c.cc = pullS8();
+              if (c.cc & E) { c.a = pullS8(); c.b = pullS8(); c.dp = pullS8(); c.x = pullS16(); c.y = pullS16(); c.u = pullS16(); cyc += 9; }
+              c.pc = pullS16(); break;
+            case 12: c.cc &= fetch(); c.cc |= E; c.waiting = true; break; // CWAI (simplified)
+            case 13: // MUL
+              t = c.a * c.b; setD(t);
+              c.cc = (c.cc & ~(Z | C)) | (t ? 0 : Z) | (t & 0x80 ? C : 0); break;
+            case 15: interrupt(0xFFFA, true, I | F); break; // SWI
+            default: break;
+          }
+          break;
+        case 4: case 5: { // inherent A / B
+          var rv = hi === 4 ? c.a : c.b, r2 = rv;
+          switch (lo) {
+            case 0: r2 = neg(rv); break; case 3: r2 = com(rv); break; case 4: r2 = lsr(rv); break;
+            case 6: r2 = ror(rv); break; case 7: r2 = asr(rv); break; case 8: r2 = asl(rv); break;
+            case 9: r2 = rol(rv); break; case 10: r2 = dec(rv); break; case 12: r2 = inc(rv); break;
+            case 13: tst(rv); break; case 15: r2 = clr(); break;
+            default: break;
+          }
+          if (hi === 4) c.a = r2; else c.b = r2;
+          break;
+        }
+        case 8: case 9: case 10: case 11: case 12: case 13: case 14: case 15: {
+          var isB = hi >= 12, mode = hi & 3; // 0 imm,1 direct,2 indexed,3 extended
+          var is16 = false;
+          // 16-bit ops: lo 3 (SUBD/ADDD), 12 (CMPX/LDD), 14 (LDX/LDU), 8D (BSR/JSR) etc.
+          if (!isB) { is16 = (lo === 3 || lo === 12 || lo === 14); } else { is16 = (lo === 3 || lo === 12 || lo === 13 || lo === 14 || lo === 15); }
+          if (hi === 8 && lo === 13) { // BSR
+            t = sx8(fetch()); pushS16(c.pc); c.pc = (c.pc + t) & 0xFFFF; c.cycles += cyc; return cyc;
+          }
+          // operand fetch
+          if (mode === 0) { if (is16 || (hi === 8 && lo === 0x0F)) { ea = -1; } else ea = -1; }
+          if (mode === 1) ea = (c.dp << 8) | fetch();
+          else if (mode === 2) ea = indexed();
+          else if (mode === 3) ea = fetch16();
+          if (mode === 0) { m = is16 ? fetch16() : fetch(); }
+          else if (!(lo === 7 || lo === 0x0F && !isB && false) ) { /* handled below by op */ }
+          var rd8 = function () { return mode === 0 ? m : rd(ea); };
+          var rd16v = function () { return mode === 0 ? m : rd16(ea); };
+          if (!isB) { // 0x80-0xBF : A ops, CMPX, JSR, LDX, STX
+            switch (lo) {
+              case 0: c.a = sub8(c.a, rd8(), 0); break;
+              case 1: sub8(c.a, rd8(), 0); break;
+              case 2: c.a = sub8(c.a, rd8(), c.cc & C ? 1 : 0); break;
+              case 3: setD(sub16(D(), rd16v())); break;
+              case 4: c.a = and8(c.a, rd8()); break;
+              case 5: and8(c.a, rd8()); break;
+              case 6: c.a = ld8(rd8()); break;
+              case 7: t = c.a; wr(ea, t); setNZ8(t); c.cc &= ~V; break; // STA
+              case 8: c.a = eor8(c.a, rd8()); break;
+              case 9: c.a = add8(c.a, rd8(), c.cc & C ? 1 : 0); break;
+              case 10: c.a = or8(c.a, rd8()); break;
+              case 11: c.a = add8(c.a, rd8(), 0); break;
+              case 12: sub16(c.x, rd16v()); break; // CMPX
+              case 13: pushS16(c.pc); c.pc = ea; break; // JSR (not immediate)
+              case 14: c.x = ld16(rd16v()); break;
+              case 15: wr16(ea, c.x); setNZ16(c.x); c.cc &= ~V; break; // STX
+            }
+          } else {
+            switch (lo) {
+              case 0: c.b = sub8(c.b, rd8(), 0); break;
+              case 1: sub8(c.b, rd8(), 0); break;
+              case 2: c.b = sub8(c.b, rd8(), c.cc & C ? 1 : 0); break;
+              case 3: setD(add16(D(), rd16v())); break;
+              case 4: c.b = and8(c.b, rd8()); break;
+              case 5: and8(c.b, rd8()); break;
+              case 6: c.b = ld8(rd8()); break;
+              case 7: wr(ea, c.b); setNZ8(c.b); c.cc &= ~V; break;
+              case 8: c.b = eor8(c.b, rd8()); break;
+              case 9: c.b = add8(c.b, rd8(), c.cc & C ? 1 : 0); break;
+              case 10: c.b = or8(c.b, rd8()); break;
+              case 11: c.b = add8(c.b, rd8(), 0); break;
+              case 12: setD(ld16(rd16v())); break; // LDD
+              case 13: wr16(ea, D()); setNZ16(D()); c.cc &= ~V; break; // STD
+              case 14: c.u = ld16(rd16v()); break; // LDU
+              case 15: wr16(ea, c.u); setNZ16(c.u); c.cc &= ~V; break; // STU
+            }
+          }
+          // fix: 0x8E etc. immediate LDX fetch handled; 0x87 (STA imm) / 0xC7 illegal ignored
+          break;
+        }
+      }
+      c.cycles += cyc + extra; return cyc + extra;
+    }
+
+    // ---- page 2 ($10xx) and page 3 ($11xx)
+    if (op >= 0x21 && op <= 0x2F && page === 256) { // long branches
+      t = fetch16(); if (branchCond(op & 15)) { c.pc = (c.pc + t) & 0xFFFF; cyc += 1; }
+      c.cycles += cyc; return cyc;
+    }
+    if (op === 0x3F) { interrupt(page === 256 ? 0xFFF4 : 0xFFF2, true, I | F); c.cycles += cyc; return cyc; }
+    var hi2 = op >> 4, lo2 = op & 15, md = hi2 & 3;
+    if (hi2 >= 8) {
+      var imm = (hi2 === 8 || hi2 === 12);
+      if (hi2 === 8 || hi2 === 12) { mode = 0; } 
+      mode = hi2 & 3; // 8:imm 9:direct A:indexed B:ext ; C..F same
+      if (mode === 1) ea = (c.dp << 8) | fetch(); else if (mode === 2) ea = indexed(); else if (mode === 3) ea = fetch16();
+      var val16 = function () { return mode === 0 ? fetch16() : rd16(ea); };
+      if (page === 256) {
+        switch (op) {
+          case 0x83: sub16(D(), val16()); break;                 // CMPD
+          case 0x8C: case 0x9C: case 0xAC: case 0xBC: break;       // (page 3 only)
+          case 0x8E: case 0x9E: case 0xAE: case 0xBE: c.y = ld16(val16()); break;
+          case 0x9F: case 0xAF: case 0xBF: wr16(ea, c.y); setNZ16(c.y); c.cc &= ~V; break;
+          case 0xCE: case 0xDE: case 0xEE: case 0xFE: c.s = ld16(val16()); break;
+          case 0xDF: case 0xEF: case 0xFF: wr16(ea, c.s); setNZ16(c.s); c.cc &= ~V; break;
+          case 0x93: case 0xA3: case 0xB3: sub16(D(), val16()); break;
+          default: break;
+        }
+        if (op === 0x8C || op === 0x9C || op === 0xAC || op === 0xBC) sub16(c.y, val16());
+      } else {
+        switch (op) {
+          case 0x83: case 0x93: case 0xA3: case 0xB3: sub16(c.u, val16()); break; // CMPU
+          case 0x8C: case 0x9C: case 0xAC: case 0xBC: sub16(c.s, val16()); break; // CMPS
+          default: break;
+        }
+      }
+    }
+    c.cycles += cyc + extra; return cyc + extra;
+  };
+
+  c.run = function (target) { while (c.cycles < target) c.step(); };
+  c.reset = function (pc) { c.a = c.b = 0; c.x = c.y = c.u = c.s = 0; c.dp = 0; c.cc = 0x50; c.pc = pc; c.irq = false; c.waiting = false; };
+}
+if (typeof module !== 'undefined') module.exports = CPU6809;
+
+</script>
+<script>
+// Minimal Color Computer for Bill's Morse keyboard: 64K RAM, stub ROM (POLCAT), PIA0/PIA1, VDG text state, 6-bit DAC capture,
+// cassette-input line (the receive key line), and the cassette relay (the transmit key line).
+function MorseCoCo(CPU6809, CYC, game, opts) {
+  var m = this;
+  opts = opts || {};
+  var ram = m.ram = new Uint8Array(65536), rom = m.rom = new Uint8Array(65536);
+  var CPF = 14916;                       // cycles per 60 Hz field (0.8949 MHz)
+  var CPS = CPF * 60;                    // cycles per second
+  m.CPF = CPF; m.CPS = CPS;
+
+  // ---- stub ROM. The program calls Color BASIC's POLCAT through the vector at $A000 and runs it hundreds of times per
+  // dit, so the speed of the whole program (sending speed, tone pitch, receive loop counts) depends on how long the real
+  // routine took. The stub burns the same number of cycles (m.POLLDELAY loop count, calibrated by tests/calibrate.js).
+  m.POLLDELAY = opts.pollDelay || 0;
+  function romput(a, bytes) { for (var i = 0; i < bytes.length; i++) rom[a + i] = bytes[i]; }
+  romput(0xA000, [0xA1, 0xC1]);                       // POLCAT entry pointer
+  function installPolcat() {
+    romput(0xA1C1, [0x34, 0x04,                       // PSHS B
+                    0xC6, m.POLLDELAY & 255,          // LDB #delay
+                    0x5A, 0x26, 0xFD,                 // L: DECB ; BNE L
+                    0x35, 0x04,                       // PULS B
+                    0xB6, 0xFF, 0x70,                 // LDA $FF70   (next key or 0, sets Z)
+                    0x39]);                           // RTS
+  }
+  installPolcat();
+  m.setPollDelay = function (n) { m.POLLDELAY = n; installPolcat(); };
+
+  var pia0 = {cra: 0, crb: 0}, pia1 = {cra: 0, crb: 0};
+  m.vdg = 0; m.dac = 32;
+  m.keyQueue = [];
+  m.events = [];       // DAC writes this frame: [cycle-in-frame, value]
+  m.relay = false;     // $FF21 bit 3 (cassette motor relay) = the transmitter key line
+  m.relayEvents = [];  // [absolute cycle, level] (tests and the lamp)
+  m.relayFrame = [];   // relay changes inside the current field: [cycle-in-field, level]
+  var relayAtStart = false;
+  m.manualKey = false; // a human on the straight key
+  var sched = [];      // received key state: [absolute cycle, 1 = key down], sorted (the line itself is active low)
+  m.sigEvents = [];    // received-signal changes this frame (for the sidetone): [cycle-in-frame, level]
+  var frameStart = 0;
+
+  // Audio input shim: the cassette port is a zero-crossing comparator. While a recording plays, bit 0 of $FF20 is the sign of the
+  // waveform at the CPU's current cycle (low half = 0, everything else, including silence, = 1 = idle).
+  var aud = null;
+  // key (optional): 1 per sample while a tone is present, from MorseAudioIn.detect. Without it the raw waveform sign is used.
+  m.setAudioInput = function (pcm, rate, startCycle, key) { aud = pcm ? {pcm: pcm, rate: rate, start: startCycle, thr: 0.02, key: key || null} : null; };
+  m.audioInputActive = function () { return aud !== null && m.cpu.cycles - aud.start < aud.pcm.length / aud.rate * CPS; };
+  function compBit(c) {
+    var i = Math.floor((c - aud.start) / CPS * aud.rate);
+    if (i < 0 || i >= aud.pcm.length) return 1;
+    return (aud.key ? !aud.key[i] : aud.pcm[i] >= -aud.thr) ? 1 : 0;
+  }
+  function sigAt(c) {
+    if (aud) return compBit(c) ? 0 : 1;
+    if (m.manualKey) return 1;
+    var lo = 0, hi = sched.length - 1, r = 0;
+    while (lo <= hi) { var mid = (lo + hi) >> 1; if (sched[mid][0] <= c) { r = sched[mid][1]; lo = mid + 1; } else hi = mid - 1; }
+    return r;
+  }
+  m.sigAt = sigAt;
+  // Replace the scheduled receive signal. keying = [[offsetCycles, level], ...] relative to startCycle.
+  m.setSignal = function (startCycle, keying) {
+    sched = keying.map(function (e) { return [startCycle + e[0], e[1]]; });
+  };
+  m.signalEnd = function () { return sched.length ? sched[sched.length - 1][0] : 0; };
+  m.clearSignal = function () { sched = []; };
+  // Live wire from another station: edges arrive in absolute cycles (both machines count from 0 in lockstep).
+  m.addSignalEdge = function (cycle, level) {
+    var n = sched.length;
+    if (n && sched[n - 1][1] === level) return;
+    sched.push([cycle, level]);
+    if (n > 64) sched.splice(0, n - 32);     // keep the list short; only the recent past is ever read
+  };
+
+  function io(a, v, write) {
+    if (a >= 0xFFE0) return rom[a];
+    if (a >= 0xFF70 && a <= 0xFF72) return m.keyQueue.length && a === 0xFF70 ? m.keyQueue.shift() : 0;   // host key register
+    var r = a & 3;
+    if ((a & 0xFFE0) === 0xFF00) {               // PIA0 (keyboard; only the sound-mux control bits matter here)
+      if (r === 0) return 0xFF;
+      if (r === 1) { if (write) pia0.cra = v; return pia0.cra; }
+      if (r === 2) return write ? 0 : 0xFF;
+      if (write) pia0.crb = v;
+      return pia0.crb;
+    }
+    if ((a & 0xFFE0) === 0xFF20) {               // PIA1
+      if (r === 0) {
+        if (write) { m.dac = (v >> 2) & 63; m.events.push([m.cpu.cycles - frameStart, m.dac]); return 0; }
+        return aud ? compBit(m.cpu.cycles) : (sigAt(m.cpu.cycles) ? 0 : 1);      // bit 0 = cassette input: the receive key line, active low (IR = 255 is idle)
+      }
+      if (r === 1) {
+        if (write) {
+          var was = m.relay; pia1.cra = v; m.relay = (v & 8) !== 0;
+          if (was !== m.relay) { m.relayEvents.push([m.cpu.cycles, m.relay ? 1 : 0]); m.relayFrame.push([m.cpu.cycles - frameStart, m.relay ? 1 : 0]); }
+        }
+        return pia1.cra;
+      }
+      if (r === 2) { if (write) m.vdg = v; return m.vdg; }
+      if (write) pia1.crb = v;
+      return pia1.crb;
+    }
+    return 0xFF;
+  }
+  function rd(a) {
+    if (a < 0x8000) return ram[a];
+    if (a >= 0xFF00) return io(a, 0, false);
+    return rom[a];
+  }
+  function wr(a, v) {
+    if (a >= 0xFF00) { io(a, v, true); return; }
+    if (a < 0x8000) ram[a] = v;
+  }
+  var cpu = m.cpu = new CPU6809(rd, wr, CYC);
+  m.rd = rd; m.wr = wr;
+
+  // ---- program image
+  var b64 = function (s) { var bin = (typeof atob === 'function') ? atob(s) : Buffer.from(s, 'base64').toString('binary'); var o = new Uint8Array(bin.length); for (var i = 0; i < bin.length; i++) o[i] = bin.charCodeAt(i); return o; };
+  var code = b64(game.code), org = game.org;
+  m.syms = game.syms;
+  m.boot = function () {
+    ram.fill(0);
+    for (var i = 0; i < code.length; i++) ram[org + i] = code[i];
+    for (i = 0x0400; i < 0x0600; i++) ram[i] = 0x60;                    // BASIC leaves a green screen
+    m.vdg = 0; m.events = []; m.relayEvents = []; m.sigEvents = []; m.keyQueue = []; m.relay = false;
+    pia0.cra = pia0.crb = pia1.cra = pia1.crb = 0; m.manualKey = false; sched = [];
+    cpu.reset(m.syms.BEGIN); cpu.irq = false; cpu.cycles = 0; frameStart = 0;
+  };
+
+  m.runFrame = function () {
+    frameStart = cpu.cycles; m.events = []; m.relayFrame = []; relayAtStart = m.relay;
+    var target = cpu.cycles + CPF;
+    // record the received-signal level at the start of the frame and every change inside it, for the sidetone
+    var lvl = sigAt(frameStart), ev = m.sigEvents = [[0, lvl]];
+    if (sched.length) for (var i = 0; i < sched.length; i++) { var t = sched[i][0]; if (t > frameStart && t < target) ev.push([t - frameStart, sched[i][1]]); }
+    while (cpu.cycles < target) cpu.step();
+    m.frameCycles = cpu.cycles - frameStart;
+  };
+  m.frameStartCycle = function () { return frameStart; };
+  m.runSeconds = function (s) { var end = cpu.cycles + s * CPS; while (cpu.cycles < end) m.runFrame(); };
+
+  // ---- audio: the DAC (sample-and-hold) plus the received-signal sidetone
+  var lastDac = 32, phase = 0;
+  m.sidetone = true; m.dacOn = true;
+  m.tonePitch = 700;        // Hz, the sidetone
+  m.txTone = 'dac';         // 'dac': the program's own square wave; 'sidetone': a clean tone keyed by the relay (what a monitor would give)
+  m.audioFrame = function (rate) {
+    var n = Math.round(rate / 60), out = new Float32Array(n), ev = m.events, e = 0, v = lastDac, se = m.sigEvents, k = 0, sl = se.length ? se[0][1] : 0;
+    var re = m.relayFrame, r = 0, txOn = relayAtStart, txSide = m.txTone === 'sidetone';
+    // The DAC only reaches the speaker while the sound-enable bit is set and the source mux selects the DAC.
+    var dacOnNow = (pia1.crb & 8) !== 0 && (pia0.cra & 8) === 0 && (pia0.crb & 8) === 0;
+    for (var s = 0; s < n; s++) {
+      var t = s * CPF / n;
+      while (e < ev.length && ev[e][0] <= t) { v = ev[e][1]; e++; }
+      while (k < se.length && se[k][0] <= t) { sl = se[k][1]; k++; }
+      while (r < re.length && re[r][0] <= t) { txOn = re[r][1]; r++; }
+      var o = (m.dacOn && dacOnNow && !txSide) ? (v - 32) / 32 * 0.15 : 0;
+      if (aud && m.sidetone) {
+        var ai = Math.floor((frameStart - aud.start + t) / CPS * aud.rate);
+        if (ai >= 0 && ai < aud.pcm.length) o += aud.pcm[ai] * 0.6;
+      } else if (m.sidetone && (sl || (txSide && txOn))) { phase += m.tonePitch / rate; if (phase >= 1) phase -= 1; o += Math.sin(phase * 6.283185307) * 0.25; }
+      out[s] = o;
+    }
+    while (e < ev.length) { v = ev[e][1]; e++; }
+    lastDac = v; return out;
+  };
+
+  // ---- display: 32x16 alpha / semigraphics-4 text screen at $0400
+  m.PALETTE = [[7, 255, 0], [255, 255, 0], [59, 8, 255], [204, 0, 59], [255, 255, 255], [7, 227, 153], [255, 28, 255], [255, 129, 0]];
+  m.cssColor = function () { return (m.vdg >> 3) & 1 ? m.PALETTE[7] : m.PALETTE[0]; };
+  m.screenText = function () {                    // plain text view for tests: '#' for a semigraphics cell
+    var rows = [];
+    for (var r = 0; r < 16; r++) {
+      var s = '';
+      for (var c = 0; c < 32; c++) {
+        var b = ram[0x400 + r * 32 + c];
+        if (b & 0x80) s += '#'; else { var g = b & 0x3F; s += String.fromCharCode(g < 32 ? g + 64 : g); }
+      }
+      rows.push(s);
+    }
+    return rows;
+  };
+  m.pressKey = function (code) { m.keyQueue.push(code); };
+  m.typeText = function (str) { for (var i = 0; i < str.length; i++) m.keyQueue.push(str.charCodeAt(i)); };
+
+  // ---- Morse helpers for the host side. The program's own TABLE (index = ASCII & 63) holds each code as 1 followed by
+  // the elements, 1 = dah, 0 = dit; reading it from RAM means the receive-side test source and the program agree.
+  m.morseFor = function (ch) {
+    var idx = ch.charCodeAt(0) & 63, e = ram[m.syms.TABLE + idx];
+    if (!e || ch === ' ') return null;
+    var s = '';
+    var bits = e.toString(2).slice(1);
+    for (var i = 0; i < bits.length; i++) s += bits[i] === '1' ? '-' : '.';
+    return s;
+  };
+  // Standard timing: dit = 1.2/wpm s; gap 1 dit between elements, 3 between letters, 7 between words.
+  m.keyingFor = function (text, wpm, leadSeconds) {
+    var dit = 1.2 / wpm * CPS, t = (leadSeconds || 0) * CPS, out = [[0, 0]];
+    var words = text.toUpperCase().split(/\s+/).filter(Boolean);
+    words.forEach(function (w, wi) {
+      if (wi) t += 7 * dit;
+      for (var ci = 0; ci < w.length; ci++) {
+        var code = m.morseFor(w[ci]); if (!code) continue;
+        if (ci) t += 3 * dit;
+        for (var k = 0; k < code.length; k++) {
+          if (k) t += dit;
+          var len = code[k] === '-' ? 3 * dit : dit;
+          out.push([Math.round(t), 1]); out.push([Math.round(t + len), 0]); t += len;
+        }
+      }
+    });
+    return out;
+  };
+}
+// Two stations side by side: B's transmitter key line (its cassette relay) drives A's cassette input.
+// Both machines are stepped one field at a time, B first, so a key edge inside a field lands at the same offset in A's field.
+MorseCoCo.link = function (a, b) {
+  var seen = 0;
+  return {
+    runFrame: function () {
+      b.runFrame();
+      var base = a.cpu.cycles, fs = b.frameStartCycle();
+      for (; seen < b.relayEvents.length; seen++) { var e = b.relayEvents[seen]; a.addSignalEdge(base + Math.max(0, e[0] - fs), e[1]); }
+      if (b.relayEvents.length > 256) { b.relayEvents.splice(0, seen); seen = 0; }
+      a.runFrame();
+    },
+    runSeconds: function (s) { for (var i = 0, n = Math.round(s * 60); i < n; i++) this.runFrame(); }
+  };
+};
+if (typeof module !== 'undefined') module.exports = MorseCoCo;
+
+</script>
+<script>
+// Audio-to-key-line shim: turns a recording (decoded mp3 / aac / wav samples) into the on/off line the program times.
+// Like a hardware tone decoder: find the loudest steady tone, detect it synchronously (mix with sin/cos, low-pass), and run
+// the result through a Schmitt trigger. Everything outside the tone's narrow band, including most noise, drops out.
+var MorseAudioIn = (function () {
+  function goertzel(x, from, n, rate, f) {
+    var w = 2 * Math.PI * f / rate, c = 2 * Math.cos(w), s1 = 0, s2 = 0;
+    for (var i = from; i < from + n; i++) { var s = x[i] + c * s1 - s2; s2 = s1; s1 = s; }
+    return s1 * s1 + s2 * s2 - c * s1 * s2;
+  }
+  function findTone(pcm, rate, minHz) {
+    var N = 4096, best = 0, bestAt = 0, i;
+    for (var at = 0; at + N <= pcm.length; at += N >> 1) {               // loudest block = a block with tone in it
+      var e = 0; for (i = at; i < at + N; i++) e += pcm[i] * pcm[i];
+      if (e > best) { best = e; bestAt = at; }
+    }
+    var bf = 700, bp = -1;
+    for (var f = minHz || 300; f <= 2400; f += 5) { var p = goertzel(pcm, bestAt, N, rate, f); if (p > bp) { bp = p; bf = f; } }
+    return bf;
+  }
+  // Returns {freq, key}: key[i] = 1 while the tone is present.
+  function detect(pcm, rate, opts) {
+    opts = opts || {};
+    var f = opts.freq || findTone(pcm, rate), n = pcm.length, env = new Float32Array(n);
+    var w = 2 * Math.PI * f / rate, a = 1 - Math.exp(-1 / (0.004 * rate)), I = 0, Q = 0, i;   // 4 ms smoothing
+    for (i = 0; i < n; i++) {
+      I += (pcm[i] * Math.cos(w * i) - I) * a; Q += (pcm[i] * Math.sin(w * i) - Q) * a;
+      env[i] = Math.sqrt(I * I + Q * Q);
+    }
+    var sorted = Float32Array.from(env).sort(), peak = sorted[Math.floor(n * 0.98)];
+    var on = peak * (opts.on || 0.5), off = peak * (opts.off || 0.3), key = new Uint8Array(n), st = 0;
+    for (i = 0; i < n; i++) { if (!st && env[i] > on) st = 1; else if (st && env[i] < off) st = 0; key[i] = st; }
+    return {freq: f, key: key};
+  }
+  return {detect: detect, findTone: findTone};
+})();
+if (typeof module !== 'undefined') module.exports = MorseAudioIn;
+
+</script>
+<script>
+(function () {
+'use strict';
+var CYC = [6,0,0,6,6,0,6,6,6,6,6,0,6,6,3,6,1,1,2,2,0,0,5,9,0,2,3,0,3,2,8,6,3,3,3,3,3,3,3,3,3,3,3,3,3,3,3,3,4,4,4,4,5,5,5,5,0,5,3,6,21,11,-1,19,2,0,0,2,2,0,2,2,2,2,2,0,2,2,0,2,2,0,0,2,2,0,2,2,2,2,2,0,2,2,0,2,6,0,0,6,6,0,6,6,6,6,6,0,6,6,3,6,7,0,0,7,7,0,7,7,7,7,7,0,7,7,4,7,2,2,2,4,2,2,2,0,2,2,2,2,4,7,3,0,4,4,4,6,4,4,4,4,4,4,4,4,6,7,5,5,4,4,4,6,4,4,4,4,4,4,4,4,6,7,5,5,5,5,5,7,5,5,5,5,5,5,5,5,7,8,6,6,2,2,2,4,2,2,2,0,2,2,2,2,3,0,3,0,4,4,4,6,4,4,4,4,4,4,4,4,5,5,5,5,4,4,4,6,4,4,4,4,4,4,4,4,5,5,5,5,5,5,5,7,5,5,5,5,5,5,5,5,6,6,6,6,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,5,5,5,5,5,5,5,5,5,5,5,5,5,5,5,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,20,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,5,0,0,0,0,0,0,0,0,5,0,4,0,0,0,0,7,0,0,0,0,0,0,0,0,7,0,6,6,0,0,0,7,0,0,0,0,0,0,0,0,7,0,6,6,0,0,0,8,0,0,0,0,0,0,0,0,8,0,7,7,0,0,0,0,0,0,0,0,0,0,0,0,0,0,4,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,6,6,0,0,0,0,0,0,0,0,0,0,0,0,0,0,6,6,0,0,0,0,0,0,0,0,0,0,0,0,0,0,7,7,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,20,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,5,0,0,0,0,0,0,0,0,5,0,0,0,0,0,0,7,0,0,0,0,0,0,0,0,7,0,0,0,0,0,0,7,0,0,0,0,0,0,0,0,7,0,0,0,0,0,0,8,0,0,0,0,0,0,0,0,8,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0];
+var DATA = {"games":{"original":{"org":13410,"code":"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","syms":{"BEGIN":13410,"ISPD":13413,"TVAL":13418,"XFLG":13428,"RFLG":13429,"RC":13441,"CHRCV":14682,"TABLE":15683}},"patched":{"org":13410,"code":"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","syms":{"BEGIN":13410,"ISPD":13413,"TVAL":13418,"XFLG":13428,"RFLG":13429,"RC":13441,"CHRCV":14682,"TABLE":15673}}},"pollDelay":111};
+var $ = function (id) { return document.getElementById(id); };
+
+function makeStation(which) {
+  var st = new MorseCoCo(CPU6809, CYC, DATA.games[which], {pollDelay: DATA.pollDelay}); st.boot();
+  st.txTone = ($('txTone') || {}).value || 'sidetone'; st.tonePitch = +(($('pitch') || {}).value || 700);
+  return st;
+}
+var A = makeStation('patched');   // your station
+var B = null, wire = null, bBusy = false;
+
+/* ---------- display: 32x16 text screen, drawn 16x24 pixels per cell ---------- */
+// 5x7 dot glyphs for screen codes 0x20..0x5F (ASCII order), five hex bytes each, one byte per column, bit 0 = top row.
+var FONT = ["0000000000", "00005F0000", "0007000700", "147F147F14", "242A7F2A12", "2313086462", "3649552250", "0005030000", "001C224100", "0041221C00", "14083E0814", "08083E0808", "0050300000", "0808080808", "0060600000", "2010080402", "3E5149453E", "00427F4000", "4261514946", "2141454B31", "1814127F10", "2745454539", "3C4A494930", "0171090503", "3649494936", "064949291E", "0036360000", "0056360000", "0814224100", "1414141414", "0041221408", "0201510906", "324979413E", "7E1111117E", "7F49494936", "3E41414122", "7F4141221C", "7F49494941", "7F09090901", "3E4149497A", "7F0808087F", "00417F4100", "2040413F01", "7F08142241", "7F40404040", "7F020C027F", "7F0408107F", "3E4141413E", "7F09090906", "3E4151215E", "7F09192946", "4649494931", "01017F0101", "3F4040403F", "1F2040201F", "3F4038403F", "6314081463", "0708700807", "6151494543", "007F414100", "0204081020", "0041417F00", "04027F0204", "081C2A0808"];
+var GLYPH = FONT.map(function (h) { var c = []; for (var i = 0; i < 5; i++) c.push(parseInt(h.substr(i * 2, 2), 16)); return c; });
+var screenCv = $('screen'), sctx = screenCv.getContext('2d');
+var img = sctx.createImageData(512, 384), px = new Uint32Array(img.data.buffer);
+function rgba(c) { return ((255 << 24) | (c[2] << 16) | (c[1] << 8) | c[0]) >>> 0; }
+var prev = new Uint8Array(512), prevVdg = -1, BLACK = 0xFF000000;
+function fillCell(x0, y0, col) { for (var y = 0; y < 24; y++) { var o = (y0 + y) * 512 + x0; for (var x = 0; x < 16; x++) px[o + x] = col; } }
+function drawCell(idx, bright, dim) {
+  var b = A.ram[0x400 + idx], x0 = (idx & 31) * 16, y0 = (idx >> 5) * 24;
+  if (b & 0x80) {                                  // semigraphics 4: four colored quadrants
+    var on = rgba(A.PALETTE[(b >> 4) & 7]);
+    for (var y = 0; y < 24; y++) for (var x = 0; x < 16; x++) {
+      var bit = y < 12 ? (x < 8 ? 8 : 4) : (x < 8 ? 2 : 1);
+      px[(y0 + y) * 512 + x0 + x] = (b & bit) ? on : BLACK;
+    }
+    return;
+  }
+  var normal = (b & 0x40) !== 0, g = b & 0x3F, gi = g < 32 ? g + 32 : g - 32, glyph = GLYPH[gi];
+  var bg = normal ? bright : dim, fg = normal ? 0xFF101010 : bright;
+  fillCell(x0, y0, bg);
+  for (var c = 0; c < 5; c++) for (var r = 0; r < 7; r++) if ((glyph[c] >> r) & 1) {
+    var ox = x0 + 3 + c * 2, oy = y0 + 5 + r * 2, o = oy * 512 + ox;
+    px[o] = px[o + 1] = px[o + 512] = px[o + 513] = fg;
+  }
+}
+function draw() {
+  var vdgNow = A.vdg & 0x08, all = vdgNow !== prevVdg, any = all;
+  var c = A.cssColor(), bright = rgba(c), dim = rgba([c[0] * 0.13 | 0, c[1] * 0.13 | 0, c[2] * 0.13 | 0]);
+  for (var i = 0; i < 512; i++) {
+    var b = A.ram[0x400 + i];
+    if (all || b !== prev[i]) { prev[i] = b; drawCell(i, bright, dim); any = true; }
+  }
+  prevVdg = vdgNow;
+  if (any) sctx.putImageData(img, 0, 0);
+}
+
+/* ---------- keyboard ---------- */
+var SPECIAL = {Enter: 13, Backspace: 8, ArrowLeft: 8, ArrowRight: 9, ArrowUp: 94, ArrowDown: 10, Escape: 3, Home: 12, Delete: 12};
+function keyCode(key) {
+  if (SPECIAL[key]) return SPECIAL[key];
+  if (key.length === 1) { var c = key.toUpperCase().charCodeAt(0); if (c >= 0x20 && c <= 0x5F) return c; }   // the Color Computer keys: upper case only
+  return 0;
+}
+var ctrlHeld = false, btnHeld = false;
+function applyKey() { A.manualKey = ctrlHeld || btnHeld; $('key').classList.toggle('on', btnHeld); }
+var kbd = $('kbd');
+addEventListener('keydown', function (e) {
+  var t = e.target, tag = t && t.tagName;
+  if (tag === 'TEXTAREA' || tag === 'SELECT' || (tag === 'INPUT' && t !== kbd)) return;
+  if (e.key === 'Control') { ctrlHeld = true; applyKey(); ensureAudio(); return; }
+  if (e.ctrlKey || e.metaKey || e.altKey) return;
+  if (tag === 'BUTTON' && (e.key === 'Enter' || e.key === ' ')) return;
+  var code = keyCode(e.key);
+  if (!code) return;
+  if (t === kbd && e.key.length === 1) return;              // printable keys in the phone box arrive through the input event
+  e.preventDefault();
+  if (e.repeat) return;                                     // the Color Computer keyboard does not auto-repeat
+  ensureAudio(); A.pressKey(code);
+});
+addEventListener('keyup', function (e) { if (e.key === 'Control') { ctrlHeld = false; applyKey(); } });
+addEventListener('blur', function () { ctrlHeld = btnHeld = false; applyKey(); });
+kbd.addEventListener('input', function () {
+  var v = kbd.value; kbd.value = ''; ensureAudio();
+  for (var i = 0; i < v.length; i++) { var c = v[i].toUpperCase().charCodeAt(0); if (c >= 0x20 && c <= 0x5F) A.pressKey(c); }
+});
+document.querySelectorAll('#keypad button').forEach(function (b) {
+  b.addEventListener('click', function () { ensureAudio(); A.pressKey(+b.dataset.k); b.blur(); });
+});
+var keyBtn = $('key');
+keyBtn.addEventListener('pointerdown', function (e) { e.preventDefault(); try { keyBtn.setPointerCapture(e.pointerId); } catch (x) {} btnHeld = true; applyKey(); ensureAudio(); });
+['pointerup', 'pointercancel', 'lostpointercapture'].forEach(function (n) { keyBtn.addEventListener(n, function () { btnHeld = false; applyKey(); }); });
+keyBtn.addEventListener('contextmenu', function (e) { e.preventDefault(); });
+screenCv.addEventListener('pointerdown', function () { screenCv.focus({preventScroll: true}); ensureAudio(); });
+
+/* ---------- audio: the sound card's clock drives the emulation ----------
+   Each time the sound card needs samples, the next 1/60 s of the program runs and its sound is played: the DAC tone while you send, Station B's
+   sidetone, or the recording itself. Sound, key lamps and the program therefore share one clock and cannot drift apart. Without audio (no click yet,
+   or sound off before the first click) the page runs on the screen's timer instead. */
+var actx = null, soundOn = true, volume = 0.8, audioDriven = false, cur = null, pos = 0, fieldsRun = 0;
+function stepField() { if (wire) wire.runFrame(); else A.runFrame(); fieldsRun++; }
+function ensureAudio() {
+  if (actx) { if (actx.state === 'suspended') actx.resume(); return; }
+  if (!soundOn) return;
+  try {
+    var AC = window.AudioContext || window.webkitAudioContext; if (!AC) return;
+    actx = new AC();
+    var proc = actx.createScriptProcessor(2048, 0, 1);
+    proc.onaudioprocess = function (ev) {
+      var out = ev.outputBuffer.getChannelData(0);
+      for (var i = 0; i < out.length; i++) {
+        if (!cur || pos >= cur.length) {
+          if (document.hidden) { out[i] = 0; continue; }
+          stepField(); cur = A.audioFrame(actx.sampleRate); pos = 0;
+        }
+        out[i] = soundOn ? cur[pos++] * volume : (pos++, 0);
+      }
+    };
+    proc.connect(actx.destination);
+    actx.onstatechange = function () { audioDriven = actx.state === 'running'; last = performance.now(); acc = 0; };
+    audioDriven = actx.state === 'running';
+  } catch (e) { actx = null; }
+}
+$('btnSound').addEventListener('click', function () {
+  soundOn = !soundOn; this.setAttribute('aria-pressed', String(!soundOn)); this.textContent = soundOn ? 'Sound off' : 'Sound on';
+  if (soundOn) ensureAudio();
+});
+$('volume').addEventListener('input', function () { volume = +this.value / 100; });
+$('txTone').addEventListener('change', function () { A.txTone = this.value; });
+$('pitch').addEventListener('input', function () { A.tonePitch = +this.value; $('pitchHz').textContent = this.value + ' Hz'; });
+
+/* ---------- Station B: a second copy of the program sending to your cassette input ---------- */
+var bLast = 0;
+function sendB() {
+  var txt = $('bText').value.toUpperCase().replace(/[^\x20-\x5F]/g, '').replace(/\s+/g, ' ').trim();
+  if (!txt) { $('bMsg').textContent = 'Type a message first.'; return; }
+  ensureAudio();
+  var wpm = +$('bWpm').value, msg = ($('bPre').checked ? 'V' : '') + txt;
+  B = makeStation('original');          // the other station always runs the program as printed
+  B.runSeconds(0.3); B.typeText('S'); B.runSeconds(0.3);                          // set B up the way a user would
+  B.typeText(String(wpm)); B.pressKey(13); B.runSeconds(0.5); B.pressKey(94); B.runSeconds(0.3);
+  B.typeText(msg); B.runSeconds(0.2); B.pressKey(13);
+  wire = MorseCoCo.link(A, B); bLast = performance.now();
+  var inMain = A.ram[0x407] === 0x52 && A.ram[0x408] === 0x45;
+  $('bMsg').textContent = 'Station B is sending ' + msg.length + ' characters at ' + wpm + ' WPM.' + (inMain && A.ram[0x41F] !== 0x12 ? ' Your station is not in receive mode (press Down arrow).' : '');
+  $('bSend').disabled = true;
+}
+function checkB() {
+  if (!B) return;
+  if (B.relay || B.keyQueue.length) bLast = performance.now();
+  if (B.ram[B.syms.XFLG] === 0 && !B.relay && performance.now() - bLast > 1500) {
+    B = null; wire = null; $('bSend').disabled = false; $('bMsg').textContent = 'Station B finished.';
+  }
+}
+$('bSend').addEventListener('click', sendB);
+
+/* ---------- Recording: decoded audio drives the cassette input ---------- */
+var rec = null;
+function mixDown(buf) {
+  var n = buf.length, out = new Float32Array(n);
+  for (var c = 0; c < buf.numberOfChannels; c++) { var d = buf.getChannelData(c); for (var i = 0; i < n; i++) out[i] += d[i] / buf.numberOfChannels; }
+  return out;
+}
+function loadBuffer(ab, name) {
+  $('aMsg').textContent = 'Decoding ' + name + '...'; $('aPlay').disabled = true;
+  var AC = window.AudioContext || window.webkitAudioContext, ctx = new AC();
+  ctx.decodeAudioData(ab).then(function (buf) {
+    ctx.close();
+    var pcm = mixDown(buf);
+    rec = {name: name, pcm: pcm, rate: buf.sampleRate, det: null};
+    $('aMsg').textContent = name + ': ' + (pcm.length / buf.sampleRate).toFixed(1) + ' s. Ready.'; $('aPlay').disabled = false;
+  }).catch(function () { rec = null; $('aMsg').textContent = 'This browser could not decode that file.'; });
+}
+$('aFile').addEventListener('change', function () {
+  var f = this.files && this.files[0]; if (!f) return;
+  f.arrayBuffer().then(function (ab) { loadBuffer(ab, f.name); });
+});
+function fetchRecording(url) {
+  if (!/^https?:\/\//i.test(url)) { $('aMsg').textContent = 'Enter an http or https address.'; return; }
+  $('aMsg').textContent = 'Fetching ' + url.split('/').pop() + '...'; $('aPlay').disabled = true;
+  fetch(url).then(function (r) { if (!r.ok) throw new Error(r.status); return r.arrayBuffer(); })
+    .then(function (ab) { loadBuffer(ab, decodeURIComponent(url.split('/').pop())); })
+    .catch(function () { rec = null; $('aMsg').textContent = 'Could not fetch that address. The server must allow cross-origin requests, and you must be online.'; });
+}
+$('aFetch').addEventListener('click', function () { fetchRecording($('aUrl').value.trim()); });
+$('aPreset').addEventListener('change', function () { if (this.value) { $('aUrl').value = this.value; fetchRecording(this.value); } });
+$('aPlay').addEventListener('click', function () {
+  if (!rec) return;
+  ensureAudio();
+  var raw = $('aMode').value === 'raw', key = null, note = '';
+  if (!raw) { if (!rec.det) rec.det = MorseAudioIn.detect(rec.pcm, rec.rate); key = rec.det.key; note = ' Tone found at ' + rec.det.freq + ' Hz.'; }
+  else note = ' Raw mode: the program sees the audio\'s polarity, as it did from a radio earphone jack. It depends on the pitch lining up with its timing loops; around 1200 to 1500 Hz is where it worked best.';
+  A.setAudioInput(rec.pcm, rec.rate, A.cpu.cycles, key);
+  $('aStop').disabled = false; $('aMsg').textContent = 'Playing ' + rec.name + '.' + note;
+});
+$('aStop').addEventListener('click', function () { A.setAudioInput(null); $('aStop').disabled = true; $('aMsg').textContent = 'Stopped.'; });
+function checkRec() { if (!$('aStop').disabled && !A.audioInputActive()) { A.setAudioInput(null); $('aStop').disabled = true; $('aMsg').textContent = 'Finished.'; } }
+
+
+/* ---------- main loop ---------- */
+var acc = 0, last = performance.now();
+function hud() {
+  var inMain = A.ram[0x407] === 0x52 && A.ram[0x408] === 0x45, mode = A.ram[0x41F];
+  $('hudMode').textContent = !inMain ? 'Setup' : mode === 0x14 ? 'Transmit' : 'Receive';
+  var sp = parseInt(String.fromCharCode(A.ram[0x41B] & 0x3F, A.ram[0x41C] & 0x3F), 10);
+  $('hudSpeed').textContent = inMain && sp ? sp + ' WPM' : '-';
+  $('lampKey').classList.toggle('on', A.relay);
+  $('lampIn').classList.toggle('on', !!A.sigAt(A.cpu.cycles));
+  $('hudSound').textContent = audioDriven ? (soundOn ? 'on' : 'muted') : 'click the screen';
+}
+function tick(now) {
+  var dt = Math.min(now - last, 1000); last = now;   // emulation is cheap, so a throttled tab catches up instead of slowing the Morse timing
+  if (!document.hidden) {
+    if (!audioDriven) {
+      acc += dt;
+      var n = 0;
+      while (acc >= 1000 / 60 && n < 60) { stepField(); acc -= 1000 / 60; n++; }
+      if (acc > 1000) acc = 0;
+    }
+    checkB(); checkRec(); draw(); hud();
+  }
+  requestAnimationFrame(tick);
+}
+$('btnReset').addEventListener('click', function () {
+  A = makeStation($('progVer').value); B = null; wire = null; $('aStop').disabled = true; $('bSend').disabled = false; prevVdg = -1; $('bMsg').textContent = 'Put your station in receive mode first.'; screenCv.focus({preventScroll: true});
+});
+$('progVer').addEventListener('change', function () {
+  A = makeStation(this.value); B = null; wire = null; $('bSend').disabled = false; $('aStop').disabled = true; prevVdg = -1;
+  $('bMsg').textContent = 'Put your station in receive mode first.'; applyKey(); screenCv.focus({preventScroll: true});
+});
+requestAnimationFrame(function (t) { last = t; tick(t); });
+})();
+</script>
+</body>
+</html>

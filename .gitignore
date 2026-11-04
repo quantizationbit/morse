@@ -1,0 +1,6 @@
+__pycache__/
+*.pyc
+# Third-party audio and large scans are not part of this repo
+*.mp3
+*.pdf
+*.tar.gz
